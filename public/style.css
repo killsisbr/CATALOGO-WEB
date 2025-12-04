@@ -131,7 +131,7 @@ body {
   margin: 0 auto;
   background: var(--bg-dark);
   position: relative;
-  overflow: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   transition: max-width 0.3s ease, box-shadow 0.3s ease;
@@ -149,7 +149,7 @@ body {
   gap: 16px;
   align-items: center;
   box-shadow: var(--shadow);
-  z-index: 100;
+  z-index: 1000; /* Alto para garantir dropdown de busca visível */
   border-bottom: 1px solid var(--border-dark);
   flex-shrink: 0;
   overflow: visible; /* IMPORTANTE: permite que dropdown de busca apareça */
@@ -199,6 +199,7 @@ body {
   flex: 1;
   max-width: 300px;
   margin: 0 16px;
+  z-index: 10000; /* Garante que o dropdown fique acima de tudo */
 }
 
 #search-input {
@@ -230,16 +231,19 @@ body {
 }
 
 .search-results {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  min-width: 280px;
+  width: auto;
+  max-width: 95vw;
   background: var(--bg-card);
   border: 1px solid var(--border-dark);
   border-radius: var(--border-radius);
-  max-height: 350px;
+  max-height: 60vh;
   overflow-y: auto;
-  z-index: 9999; /* Muito alto para ficar acima de tudo */
+  z-index: 99999; /* Muito alto para ficar acima de tudo */
   display: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   margin-top: 4px;
@@ -252,6 +256,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: background-color 0.2s ease;
 }
 
 .search-result-item:last-child {
@@ -260,6 +265,18 @@ body {
 
 .search-result-item:hover {
   background: #2d2d2d;
+}
+
+/* Estilo quando nenhum resultado é encontrado */
+.search-result-item.no-results {
+  justify-content: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  cursor: default;
+}
+
+.search-result-item.no-results:hover {
+  background: transparent;
 }
 
 .search-result-image {
@@ -287,18 +304,24 @@ body {
 
 .search-result-info {
   flex: 1;
+  min-width: 0; /* Permite que flex item encolha */
+  overflow: hidden;
 }
 
 .search-result-name {
   font-weight: 500;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-result-price {
   color: var(--primary-color);
   font-weight: 600;
   font-size: 14px;
+  margin-top: 2px;
 }
 
 /* Seletor de Categorias */
@@ -314,7 +337,7 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--primary-color) #2d2d2d;
   position: relative;
-  z-index: 10; /* Menor que o search-results (9999) */
+  z-index: 1; /* Bem abaixo do search-results */
 }
 
 .category-selector::-webkit-scrollbar {
@@ -478,7 +501,6 @@ body {
   width: 100%;
   /* Manter proporção mínima mesmo sem imagem */
   min-height: 180px;
-  aspect-ratio: 4 / 3;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -489,7 +511,7 @@ body {
 
 .product-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   max-height: 320px; /* limitar altura máxima da imagem para não estourar o layout */
   /* Mostrar a imagem inteira sempre que possível para evitar zoom excessivo */
   object-fit: contain;
@@ -2352,7 +2374,6 @@ body {
   .product-image-container {
     min-height: 140px;
     max-height: 45vh;
-    aspect-ratio: 4 / 3;
     background: #2a2a2a;
   }
 
@@ -2362,7 +2383,7 @@ body {
     object-fit: contain;
     max-height: 45vh; /* limite visual para evitar imagem muito grande */
     width: 100%;
-    height: 100%;
+    height: auto;
     background: #2a2a2a;
   }
 
@@ -3023,8 +3044,9 @@ body {
   
   .product-image-container {
     width: 50%;
-    height: 100%;
-    min-height: 450px;
+    height: auto;
+    min-height: 400px;
+    max-height: 500px;
     flex-shrink: 0;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
     display: flex;
@@ -3033,6 +3055,7 @@ body {
     padding: 20px;
     position: relative;
     overflow: hidden;
+    border-radius: 20px 0 0 20px;
   }
   
   .product-image-container::after {
@@ -3046,17 +3069,16 @@ body {
   }
   
   .product-image {
-    /* Ajuste para mostrar a imagem inteira dentro do contêiner
-       usar largura automática e altura 100% permite que imagens com diferentes
-       proporções sejam exibidas por completo sem crop. */
+    /* Ajuste para mostrar a imagem inteira dentro do contêiner */
     width: auto;
-    height: 100%;
+    height: auto;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    object-position: top center;
+    object-position: center;
     filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
     transition: transform 0.3s ease;
+    background: transparent;
   }
   
   .product-card:hover .product-image {
@@ -3374,10 +3396,11 @@ body {
     max-width: 650px;
     right: auto;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
     background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
     border: 2px solid rgba(46, 204, 113, 0.3);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    z-index: 99999; /* Garante visibilidade */
   }
   
   .search-result-item {

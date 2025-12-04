@@ -1768,6 +1768,13 @@ function pesquisarProdutos() {
     return;
   }
   
+  // Posicionar o dropdown corretamente (position: fixed)
+  const inputRect = elements.searchInput.getBoundingClientRect();
+  const dropdownWidth = Math.max(280, inputRect.width); // Mínimo 280px
+  elements.searchResults.style.top = (inputRect.bottom + 4) + 'px';
+  elements.searchResults.style.left = Math.max(8, inputRect.left) + 'px'; // Mínimo 8px da borda
+  elements.searchResults.style.width = dropdownWidth + 'px';
+  
   // Filtrar produtos que correspondem ao termo de pesquisa
   const resultados = produtos.filter(produto => 
     produto.nome.toLowerCase().includes(termo) || 
@@ -1782,6 +1789,7 @@ function pesquisarProdutos() {
 function renderizarResultadosPesquisa(resultados) {
   // Verificar se o elemento de resultados existe
   if (!elements.searchResults) {
+    console.error('❌ Elemento searchResults não encontrado');
     return;
   }
   
@@ -1789,7 +1797,7 @@ function renderizarResultadosPesquisa(resultados) {
   const resultadosLimitados = resultados.slice(0, 10);
   
   if (resultadosLimitados.length === 0) {
-    elements.searchResults.innerHTML = '<div class="search-result-item">Nenhum produto encontrado</div>';
+    elements.searchResults.innerHTML = '<div class="search-result-item no-results">Nenhum produto encontrado</div>';
     elements.searchResults.style.display = 'block';
     return;
   }
@@ -1799,7 +1807,7 @@ function renderizarResultadosPesquisa(resultados) {
     return `
     <div class="search-result-item" data-id="${produto.id}">
       <div class="search-result-image">
-        <img src="${imagemSrc}" alt="${produto.nome}" onerror="this.style.display='none'">
+        <img src="${imagemSrc}" alt="${produto.nome}" onerror="this.src='/uploads/placeholder.png'">
       </div>
       <div class="search-result-info">
         <div class="search-result-name">${produto.nome}</div>
@@ -1810,6 +1818,7 @@ function renderizarResultadosPesquisa(resultados) {
   }).join('');
   
   elements.searchResults.style.display = 'block';
+  console.log('✅ Resultados de pesquisa renderizados:', resultadosLimitados.length);
   
   // Adicionar eventos de clique aos resultados
   document.querySelectorAll('.search-result-item').forEach(item => {
