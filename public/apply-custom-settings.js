@@ -102,6 +102,29 @@
       console.log('✅ Tema aplicado:', settings.theme);
     }
     
+    // Configurar opção de Retirada no Balcão
+    if (settings.pickupEnabled !== undefined) {
+      window.pickupEnabled = settings.pickupEnabled;
+      
+      // Tentar aplicar imediatamente
+      const applyPickupSetting = () => {
+        const pickupSection = document.getElementById('pickup-section');
+        if (pickupSection) {
+          pickupSection.style.display = settings.pickupEnabled ? 'block' : 'none';
+          console.log('✅ Retirada no balcão:', settings.pickupEnabled ? 'Habilitada' : 'Desabilitada');
+          return true;
+        }
+        return false;
+      };
+      
+      // Se não encontrou, tentar novamente após DOMContentLoaded
+      if (!applyPickupSetting()) {
+        document.addEventListener('DOMContentLoaded', applyPickupSetting);
+        // E também tentar após um pequeno delay
+        setTimeout(applyPickupSetting, 500);
+      }
+    }
+    
     // Calcular cores derivadas (mais claras e mais escuras)
     if (settings.primaryColor) {
       const primaryLighter = adjustColor(settings.primaryColor, 20);
@@ -111,6 +134,9 @@
     }
     
     console.log('✅ Todas as configurações customizadas foram aplicadas!');
+    
+    // Disparar evento para notificar que as configurações foram carregadas
+    window.dispatchEvent(new CustomEvent('customSettingsLoaded', { detail: settings }));
     
     // Adicionar indicador visual (apenas em modo debug)
     if (window.location.search.includes('debug=true')) {

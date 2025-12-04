@@ -289,19 +289,46 @@ function renderizarItensEditor(pedido) {
 
     elements.orderItemsList.appendChild(row);
 
-    // Render extras area (adicionais e observação)
+    // Render extras area (adicionais, buffet e observação)
     const extras = document.createElement('div');
     extras.className = 'pc-item-extras';
-    const adicionais = Array.isArray(item.adicionais) ? item.adicionais : [];
-    if (adicionais.length > 0) {
+    
+    // Verificar se adicionais é o novo formato { adicionais: [], buffet: [] } ou array antigo
+    let adicionaisList = [];
+    let buffetList = [];
+    
+    if (item.adicionais) {
+      if (Array.isArray(item.adicionais)) {
+        // Formato antigo: array direto
+        adicionaisList = item.adicionais;
+      } else if (typeof item.adicionais === 'object') {
+        // Novo formato: objeto com adicionais e buffet
+        adicionaisList = Array.isArray(item.adicionais.adicionais) ? item.adicionais.adicionais : [];
+        buffetList = Array.isArray(item.adicionais.buffet) ? item.adicionais.buffet : [];
+      }
+    }
+    
+    // Exibir buffet (para marmitas)
+    if (buffetList.length > 0) {
+      const buffetLine = document.createElement('div');
+      const textoBuffet = buffetList.map(b => b.nome || 'Item').join(', ');
+      buffetLine.className = 'extras-line';
+      buffetLine.style.color = '#3498db';
+      buffetLine.innerHTML = `<i class="fas fa-utensils"></i> Buffet: ${textoBuffet}`;
+      extras.appendChild(buffetLine);
+    }
+    
+    // Exibir adicionais
+    if (adicionaisList.length > 0) {
       const extrasLine = document.createElement('div');
-      const texto = adicionais
+      const texto = adicionaisList
         .map(a => `${a.nome || a.produto_nome || 'Adicional'}${(a.preco||a.preco_unitario)?` (R$ ${Number(a.preco||a.preco_unitario).toFixed(2).replace('.', ',')})`:''}`)
         .join(', ');
       extrasLine.className = 'extras-line';
       extrasLine.textContent = `Adicionais: ${texto}`;
       extras.appendChild(extrasLine);
     }
+    
     if (item.observacao && String(item.observacao).trim()) {
       const obsLine = document.createElement('div');
       obsLine.className = 'extras-line';
@@ -612,7 +639,14 @@ function mostrarDetalhesPedido(pedido) {
     // Atualizar informações do cliente
     elements.customerName.textContent = pedido.cliente_nome || 'Não informado';
     elements.customerPhone.textContent = pedido.cliente_telefone || 'Não informado';
-    elements.customerAddress.textContent = pedido.cliente_endereco || 'Não informado';
+    
+    // Verificar se é retirada no balcão
+    const isPickup = pedido.is_pickup === 1 || pedido.cliente_endereco === 'Retirada no Balcão';
+    if (isPickup) {
+      elements.customerAddress.innerHTML = '<span style="color: #3498db; font-weight: bold;"><i class="fas fa-store"></i> RETIRADA NO BALCÃO</span>';
+    } else {
+      elements.customerAddress.textContent = pedido.cliente_endereco || 'Não informado';
+    }
     // Exibir observação do local (campo do banco: observacao_entrega)
     elements.customerAddressNote.textContent = pedido.observacao_entrega || 'N/A';
     elements.paymentMethod.textContent = pedido.forma_pagamento || 'Não informado';
@@ -917,10 +951,32 @@ function formatarPedidoParaImpressoraTermica(pedido) {
     linhas.push(`${index + 1}. ${quantidade}x ${nomeProduto}`);
     linhas.push(`   ${formatarMoeda(precoUnitario)} x ${quantidade} = ${formatarMoeda(precoTotal)}`);
     
+    // Verificar formato dos adicionais (novo ou antigo)
+    let adicionaisList = [];
+    let buffetList = [];
+    
+    if (item.adicionais) {
+      if (Array.isArray(item.adicionais)) {
+        adicionaisList = item.adicionais;
+      } else if (typeof item.adicionais === 'object') {
+        adicionaisList = Array.isArray(item.adicionais.adicionais) ? item.adicionais.adicionais : [];
+        buffetList = Array.isArray(item.adicionais.buffet) ? item.adicionais.buffet : [];
+      }
+    }
+    
+    // Buffet (para marmitas)
+    if (buffetList.length > 0) {
+      linhas.push('   BUFFET DO DIA:');
+      buffetList.forEach(buffetItem => {
+        const nomeBuffet = buffetItem.nome || 'Item';
+        linhas.push(`   > ${nomeBuffet}`);
+      });
+    }
+    
     // Adicionais (se houver)
-    if (item.adicionais && item.adicionais.length > 0) {
+    if (adicionaisList.length > 0) {
       linhas.push('   ADICIONAIS:');
-      item.adicionais.forEach(adicional => {
+      adicionaisList.forEach(adicional => {
         const nomeAdicional = adicional.produto_nome || adicional.nome || 'Adicional';
         const precoAdicional = adicional.preco_unitario || adicional.preco || 0;
         linhas.push(`   + ${nomeAdicional} ${formatarMoeda(precoAdicional)}`);

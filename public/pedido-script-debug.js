@@ -18,6 +18,9 @@ let whatsappId = null;
 let clienteInfo = null;
 let entregaInfo = null; // Informações de entrega
 let sessionInfoSaved = null; // dados carregados do JWT/session (aguarda uso explicito)
+let isPickupMode = false; // Modo de retirada no balcão
+let pickupEnabled = false; // Configuração de retirada habilitada
+let buffetSelecionados = []; // Itens do buffet selecionados para marmita
 
 // Captura global de erros para facilitar depuração
 window.addEventListener('error', function(ev) {
@@ -135,6 +138,10 @@ const elements = {
   deliveryPrice: document.getElementById('delivery-price'),
   deliveryError: document.getElementById('delivery-error'),
   clientCoordinates: document.getElementById('client-coordinates'),
+  // Elementos de Retirada no Balcão
+  pickupSection: document.getElementById('pickup-section'),
+  pickupCheckbox: document.getElementById('pickup-checkbox'),
+  pickupInfoText: document.getElementById('pickup-info-text'),
   // Elementos da barra de pesquisa
   searchInput: document.getElementById('search-input'),
   searchButton: document.getElementById('search-button'),
@@ -205,7 +212,93 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.calcularTaxaBtn.style.display = (elements.clientAddress.value || '').trim().length > 0 ? 'block' : 'none';
     } catch (e) { /* ignore */ }
   }
+  
+  // Inicializar Retirada no Balcão
+  inicializarRetiradaBalcao();
 });
+
+// ============================================================
+// FUNÇÃO PARA GERENCIAR RETIRADA NO BALCÃO
+// ============================================================
+function inicializarRetiradaBalcao() {
+  const pickupCheckbox = document.getElementById('pickup-checkbox');
+  const pickupInfoText = document.getElementById('pickup-info-text');
+  const deliveryInfo = document.getElementById('delivery-info');
+  const useLocationBtn = document.getElementById('use-location-btn');
+  const clientAddressPreview = document.getElementById('client-address-preview');
+  const pickupSection = document.getElementById('pickup-section');
+  
+  console.log('🏪 inicializarRetiradaBalcao() chamada');
+  console.log('🏪 window.pickupEnabled:', window.pickupEnabled);
+  console.log('🏪 pickupSection encontrado:', !!pickupSection);
+  
+  // Função para aplicar visibilidade da seção de pickup
+  const aplicarVisibilidadePickup = () => {
+    if (pickupSection) {
+      // pickupEnabled true por padrão se não estiver definido
+      const shouldShow = window.pickupEnabled === true || window.pickupEnabled === undefined;
+      pickupSection.style.display = shouldShow ? 'block' : 'none';
+      console.log('🏪 Seção de retirada no balcão:', shouldShow ? 'VISÍVEL' : 'OCULTA', '(pickupEnabled=' + window.pickupEnabled + ')');
+    }
+  };
+  
+  // Aplicar imediatamente
+  aplicarVisibilidadePickup();
+  
+  // Também escutar evento caso as configurações sejam carregadas depois
+  window.addEventListener('customSettingsLoaded', (e) => {
+    console.log('🔔 Evento customSettingsLoaded recebido, pickupEnabled:', e.detail.pickupEnabled);
+    aplicarVisibilidadePickup();
+  });
+  
+  if (!pickupCheckbox) {
+    console.log('⚠️ Elemento pickup-checkbox não encontrado');
+    return;
+  }
+  
+  pickupCheckbox.addEventListener('change', function() {
+    isPickupMode = this.checked;
+    console.log('🏪 Modo retirada no balcão:', isPickupMode);
+    
+    if (isPickupMode) {
+      // Ativar modo retirada
+      if (pickupInfoText) pickupInfoText.style.display = 'flex';
+      if (deliveryInfo) deliveryInfo.style.display = 'none';
+      if (useLocationBtn) useLocationBtn.style.display = 'none';
+      if (clientAddressPreview) {
+        clientAddressPreview.textContent = 'Retirada no Balcão';
+        clientAddressPreview.style.color = 'var(--primary-color)';
+      }
+      
+      // Zerar taxa de entrega
+      entregaInfo = {
+        distancia: 0,
+        price: 0,
+        taxa: 0,
+        isPickup: true
+      };
+      
+      // Atualizar totais
+      atualizarCarrinho();
+    } else {
+      // Desativar modo retirada
+      if (pickupInfoText) pickupInfoText.style.display = 'none';
+      if (useLocationBtn) useLocationBtn.style.display = 'block';
+      if (clientAddressPreview) {
+        clientAddressPreview.textContent = 'Nenhum endereço selecionado';
+        clientAddressPreview.style.color = '';
+      }
+      
+      // Limpar info de entrega
+      entregaInfo = null;
+      
+      // Atualizar totais
+      atualizarCarrinho();
+    }
+  });
+  
+  console.log('✅ Retirada no balcão inicializada');
+}
 
 // ============================================================
 // FUNÇÃO PARA CARREGAR DADOS DO CACHE LOCAL
@@ -848,10 +941,24 @@ function atualizarPrecoModalQuantidade() {
   }
 }
 
-// Carregar adicionais no modal
-function carregarAdicionais() {
+// Carregar adicionais no modal (ou buffet para marmitas)
+async function carregarAdicionais() {
   console.log('🍔 carregarAdicionais() chamada');
   console.log('📦 produtoSelecionado:', produtoSelecionado);
+  
+  // Verificar se é categoria Marmita/Marmitas (case insensitive)
+  const categoriaProduto = (produtoSelecionado && produtoSelecionado.categoria) ? produtoSelecionado.categoria.toLowerCase().trim() : '';
+  const isMarmita = categoriaProduto === 'marmita' || categoriaProduto === 'marmitas';
+  
+  console.log('🍱 Categoria do produto:', produtoSelecionado?.categoria);
+  console.log('🍱 Categoria normalizada:', categoriaProduto);
+  console.log('🍱 É marmita:', isMarmita);
+  
+  if (isMarmita) {
+    // Carregar buffet do dia ao invés de adicionais
+    await carregarBuffetDoDia();
+    return;
+  }
   
   // Determinar lista de adicionais de forma robusta
   const adicionaisList = getAdicionaisList();
@@ -871,6 +978,13 @@ function carregarAdicionais() {
     console.log('📦 Element additionalsList:', elements.additionalsList);
     elements.additionalsSection.style.display = 'block';
     console.log('✅ Style display definido como: block');
+    
+    // Restaurar título para "Adicionais" (caso tenha sido mudado para Buffet)
+    const sectionTitle = elements.additionalsSection.querySelector('h3');
+    if (sectionTitle) {
+      sectionTitle.innerHTML = 'Adicionais';
+    }
+    
     elements.additionalsList.innerHTML = '';
     console.log('✅ Lista de adicionais limpa, pronta para adicionar itens');
     console.log(`🔄 Iniciando loop para renderizar ${adicionaisList.length} adicionais...`);
@@ -912,6 +1026,75 @@ function carregarAdicionais() {
     console.log('   - Sem adicionais:', adicionaisList.length === 0);
     console.log('   - É bebida:', produtoIsBebida);
     console.log('   - É adicional:', produtoIsAdicional);
+    elements.additionalsSection.style.display = 'none';
+  }
+}
+
+// ============================================================
+// FUNÇÃO PARA CARREGAR BUFFET DO DIA (MARMITAS)
+// ============================================================
+async function carregarBuffetDoDia() {
+  console.log('🍱 carregarBuffetDoDia() chamada');
+  
+  // Limpar seleções anteriores
+  buffetSelecionados = [];
+  
+  try {
+    const res = await fetch('/api/buffet');
+    const data = await res.json();
+    
+    if (!data.success || !data.itens || data.itens.length === 0) {
+      console.log('🍱 Nenhum item no buffet - ocultando seção');
+      elements.additionalsSection.style.display = 'none';
+      return;
+    }
+    
+    console.log('🍱 Itens do buffet carregados:', data.itens.length);
+    
+    // Mostrar seção de adicionais mas com título de buffet
+    elements.additionalsSection.style.display = 'block';
+    
+    // Alterar título da seção para "Buffet Atual:"
+    const sectionTitle = elements.additionalsSection.querySelector('h3');
+    if (sectionTitle) {
+      sectionTitle.innerHTML = '<i class="fas fa-utensils" style="color: #3498db;"></i> Buffet Atual:';
+    }
+    
+    // Limpar lista
+    elements.additionalsList.innerHTML = '';
+    
+    // Renderizar itens do buffet
+    data.itens.forEach((item) => {
+      const buffetItem = document.createElement('div');
+      buffetItem.className = 'additional-item buffet-item';
+      buffetItem.innerHTML = `
+        <input type="checkbox" id="buffet-${item.id}" class="additional-checkbox buffet-checkbox" data-id="${item.id}" data-nome="${item.nome}">
+        <div class="additional-info">
+          <div class="additional-name">${item.nome}</div>
+          <div class="additional-price" style="color: #27ae60; font-size: 0.85rem;">Incluso</div>
+        </div>
+      `;
+
+      const checkbox = buffetItem.querySelector('.buffet-checkbox');
+      checkbox.addEventListener('change', (e) => {
+        const itemId = parseInt(e.target.dataset.id);
+        const itemNome = e.target.dataset.nome;
+
+        if (e.target.checked) {
+          buffetSelecionados.push({ id: itemId, nome: itemNome });
+        } else {
+          buffetSelecionados = buffetSelecionados.filter(b => b.id !== itemId);
+        }
+        
+        console.log('🍱 Buffet selecionados:', buffetSelecionados);
+      });
+
+      elements.additionalsList.appendChild(buffetItem);
+    });
+    
+    console.log('✅ Buffet do dia renderizado com sucesso!');
+  } catch (error) {
+    console.error('❌ Erro ao carregar buffet:', error);
     elements.additionalsSection.style.display = 'none';
   }
 }
@@ -1090,11 +1273,20 @@ function mudarCategoria(novaCategoria) {
 function adicionarAoCarrinho(produto, quantidade, observacao, adicionais) {
   // Verificar se há adicionais específicos para este produto
   let adicionaisParaEsteItem = [];
+  let buffetParaEsteItem = [];
 
   // Se o produto for da categoria 'Adicionais', não aplicamos os adicionais selecionados.
   const produtoIsAdicional = (adicionaisCategoriaName && produto.categoria && produto.categoria.toLowerCase().trim() === adicionaisCategoriaName.toLowerCase().trim()) || /adicional/i.test(produto.categoria || '');
+  
+  // Verificar se é marmita
+  const categoriaProduto = (produto && produto.categoria) ? produto.categoria.toLowerCase().trim() : '';
+  const isMarmita = categoriaProduto === 'marmita' || categoriaProduto === 'marmitas';
 
   if (produtoIsAdicional) {
+    adicionaisParaEsteItem = [];
+  } else if (isMarmita) {
+    // Para marmitas, usar buffet selecionado
+    buffetParaEsteItem = buffetSelecionados.length > 0 ? [...buffetSelecionados] : [];
     adicionaisParaEsteItem = [];
   } else {
     adicionaisParaEsteItem = adicionaisSelecionados.length > 0 ? adicionaisSelecionados : (adicionais || []);
@@ -1104,11 +1296,13 @@ function adicionarAoCarrinho(produto, quantidade, observacao, adicionais) {
     produto: produto,
     quantidade: quantidade,
     observacao: observacao,
-    adicionais: adicionaisParaEsteItem
+    adicionais: adicionaisParaEsteItem,
+    buffet: buffetParaEsteItem
   });
   
-  // Limpar os adicionais selecionados
+  // Limpar os adicionais e buffet selecionados
   adicionaisSelecionados = [];
+  buffetSelecionados = [];
   
   atualizarCarrinho();
   mostrarNotificacao(`${quantidade}x ${produto.nome} adicionado(s) ao carrinho!`);
@@ -1134,6 +1328,12 @@ function atualizarCarrinho() {
         <div class="cart-item-name">${item.quantidade}x ${item.produto.nome}</div>
     `;
     
+    // Adicionar buffet se existir (para marmitas)
+    if (item.buffet && item.buffet.length > 0) {
+      const buffetText = item.buffet.map(b => b.nome).join(', ');
+      itemHTML += `<div class="cart-item-additionals" style="color: #3498db;"><i class="fas fa-utensils"></i> Buffet: ${buffetText}</div>`;
+    }
+    
     // Adicionar adicionais se existirem
     if (item.adicionais && item.adicionais.length > 0) {
       const adicionaisText = item.adicionais.map(a => a.nome).join(', ');
@@ -1147,7 +1347,7 @@ function atualizarCarrinho() {
     
     // Calcular preço total do item (produto + adicionais)
     const precoProduto = item.produto.preco * item.quantidade;
-    const precoAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
+    const precoAdicionais = (item.adicionais || []).reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
     const precoTotal = precoProduto + precoAdicionais;
     
     itemHTML += `
@@ -1496,14 +1696,20 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
   if (carrinho.length === 0) return;
   
   // Validar campos obrigatórios (telefone não é obrigatório pois já veio pelo WhatsApp)
-  if (!elements.clientName.value || !elements.clientAddress.value) {
-    mostrarNotificacao('Por favor, preencha seu nome e endereço!');
+  // Se for retirada no balcão, não precisa de endereço
+  if (!elements.clientName.value) {
+    mostrarNotificacao('Por favor, preencha seu nome!');
     return;
   }
   
-  // Verificar se o valor da entrega foi calculado
-  // Se a entregaInfo.price for 0 (taxa mínima), ainda é considerado válido
-  if (!entregaInfo || entregaInfo.price === null || entregaInfo.price === undefined) {
+  if (!isPickupMode && !elements.clientAddress.value) {
+    mostrarNotificacao('Por favor, preencha seu endereço ou selecione Retirada no Balcão!');
+    return;
+  }
+  
+  // Verificar se o valor da entrega foi calculado (não necessário se for retirada)
+  // Se a entregaInfo.price for 0 (taxa mínima ou retirada), ainda é considerado válido
+  if (!isPickupMode && (!entregaInfo || entregaInfo.price === null || entregaInfo.price === undefined)) {
     // Verificar também no objeto global window
     if (window.entregaInfo && (window.entregaInfo.price !== null && window.entregaInfo.price !== undefined)) {
       entregaInfo = window.entregaInfo;
@@ -1561,12 +1767,13 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
   // Preparar dados do cliente para salvar no banco
   const clienteData = {
     nome: elements.clientName.value,
-    endereco: elements.clientAddress.value,
+    endereco: isPickupMode ? 'Retirada no Balcão' : elements.clientAddress.value,
     whatsappId: whatsappId,
     // Se o whatsappId for um ID de grupo (@g.us), NÃO extrair telefone — pode gerar o número do grupo
     telefone: (whatsappId && !String(whatsappId).includes('@g.us')) ? whatsappId.replace(/\D/g, '') : null,
     pagamento: elements.paymentMethod.value,
-    troco: elements.paymentMethod.value === 'dinheiro' ? parseFloat(elements.valorPago.value) : null
+    troco: elements.paymentMethod.value === 'dinheiro' ? parseFloat(elements.valorPago.value) : null,
+    isPickup: isPickupMode
   };
   
   console.log('📞 Cliente Data sendo enviado:', {

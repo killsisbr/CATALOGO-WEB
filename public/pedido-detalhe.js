@@ -59,7 +59,14 @@ async function carregarDetalhesPedido() {
     // Atualizar informações do cliente
     elements.clienteNome.textContent = pedido.cliente_nome || 'Não informado';
     elements.clienteTelefone.textContent = pedido.cliente_telefone || 'Não informado';
-    elements.clienteEndereco.textContent = pedido.cliente_endereco || 'Não informado';
+    
+    // Verificar se é retirada no balcão
+    const isPickup = pedido.is_pickup === 1 || pedido.cliente_endereco === 'Retirada no Balcão';
+    if (isPickup) {
+      elements.clienteEndereco.innerHTML = '<span style="color: #3498db; font-weight: bold;"><i class="fas fa-store"></i> RETIRADA NO BALCÃO</span>';
+    } else {
+      elements.clienteEndereco.textContent = pedido.cliente_endereco || 'Não informado';
+    }
     elements.formaPagamento.textContent = pedido.forma_pagamento || 'Não informado';
     
     // Atualizar itens do pedido

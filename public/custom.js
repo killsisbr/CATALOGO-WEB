@@ -8,7 +8,8 @@ const defaultSettings = {
   pixKey: '',
   pixName: '',
   logo: null,
-  theme: 'dark'
+  theme: 'dark',
+  pickupEnabled: true
 };
 
 // Estado da aplicação
@@ -79,6 +80,18 @@ async function loadSettings() {
     if (elements.logoZoom) elements.logoZoom.value = customSettings.logoScale || 1;
     if (elements.logoPosX) elements.logoPosX.value = customSettings.logoPosX || 50;
     if (elements.logoPosY) elements.logoPosY.value = customSettings.logoPosY || 50;
+    
+    // Configuração de Retirada no Balcão
+    const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
+    if (pickupEnabledCheckbox) {
+      // pickupEnabled: true por padrão se não estiver definido
+      const isPickupEnabled = customSettings.pickupEnabled !== false;
+      pickupEnabledCheckbox.checked = isPickupEnabled;
+      console.log('🏪 Retirada no Balcão carregada:', isPickupEnabled, 'valor original:', customSettings.pickupEnabled);
+    } else {
+      console.warn('⚠️ Checkbox pickup-enabled não encontrado');
+    }
+    
     // Aplicar cores ao preview
     applyColorsToPreview();
   } catch (error) {
@@ -98,6 +111,12 @@ async function saveSettings() {
     customSettings.pixKey = elements.pixKey.value;
     customSettings.pixName = elements.pixName.value;
     customSettings.theme = elements.themeSelector.value;
+    
+    // Configuração de Retirada no Balcão
+    const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
+    if (pickupEnabledCheckbox) {
+      customSettings.pickupEnabled = pickupEnabledCheckbox.checked;
+    }
     
     // Salvar no servidor
       // include logo positioning/scale before saving

@@ -595,6 +595,79 @@
     .remove-logo-btn:hover {
       transform: scale(1.1);
     }
+
+    /* Toggle Switch Custom para página de customização */
+    .toggle-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .toggle-info {
+      flex: 1;
+    }
+
+    .toggle-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .toggle-description {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .toggle-switch-custom {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .toggle-switch-custom input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider-custom {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #4a4a4a;
+      transition: 0.3s;
+      border-radius: 28px;
+    }
+
+    .toggle-slider-custom:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .toggle-switch-custom input:checked + .toggle-slider-custom {
+      background-color: var(--primary);
+    }
+
+    .toggle-switch-custom input:checked + .toggle-slider-custom:before {
+      transform: translateX(24px);
+    }
   </style>
 </head>
 <body>
@@ -618,6 +691,9 @@
         </button>
         <button class="tab-btn" data-tab="pagamento">
           <i class="fas fa-credit-card"></i> Pagamento
+        </button>
+        <button class="tab-btn" data-tab="entrega">
+          <i class="fas fa-truck"></i> Entrega
         </button>
       </div>
 
@@ -735,6 +811,26 @@
         </div>
       </div>
 
+      <!-- Seção Entrega -->
+      <div class="config-section" id="section-entrega">
+        <div class="config-card">
+          <h3><i class="fas fa-store"></i> Retirada no Balcão</h3>
+          
+          <div class="form-row">
+            <div class="toggle-row">
+              <label class="toggle-switch-custom">
+                <input type="checkbox" id="pickup-enabled">
+                <span class="toggle-slider-custom"></span>
+              </label>
+              <div class="toggle-info">
+                <span class="toggle-label">Permitir Retirada no Balcão</span>
+                <span class="toggle-description">Quando ativado, o cliente pode optar por retirar o pedido diretamente no estabelecimento, sem taxa de entrega.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Botões de Ação -->
       <div class="action-buttons">
         <button class="btn btn-primary" id="save-settings">
@@ -802,7 +898,8 @@
       pixName: '',
       logo: null,
       logoSize: 50,
-      theme: 'dark'
+      theme: 'dark',
+      pickupEnabled: true
     };
 
     // Elementos
@@ -867,6 +964,14 @@
       // Logo
       if (settings.logo) {
         showLogoPreview(settings.logo);
+      }
+
+      // Configuração de Retirada no Balcão
+      const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
+      if (pickupEnabledCheckbox) {
+        const isPickupEnabled = settings.pickupEnabled !== false;
+        pickupEnabledCheckbox.checked = isPickupEnabled;
+        console.log('🏪 Retirada no Balcão carregada:', isPickupEnabled);
       }
 
       // Atualizar preview do app
@@ -1056,6 +1161,12 @@
       settings.pixKey = els.pixKey.value;
       settings.pixName = els.pixName.value;
       settings.theme = els.themeSelector.value;
+      
+      // Configuração de Retirada no Balcão
+      const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
+      if (pickupEnabledCheckbox) {
+        settings.pickupEnabled = pickupEnabledCheckbox.checked;
+      }
 
       try {
         const res = await fetch('/api/custom-settings', {

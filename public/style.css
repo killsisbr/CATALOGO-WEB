@@ -1051,6 +1051,102 @@ body {
   font-size: 0.95rem;
 }
 
+/* Seção de Retirada no Balcão */
+.pickup-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: var(--border-radius);
+  border: 1px dashed #3498db;
+}
+
+.pickup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pickup-label {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pickup-label i {
+  color: #3498db;
+}
+
+.pickup-info {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(39, 174, 96, 0.15);
+  border-radius: 6px;
+  color: var(--primary-color);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pickup-info i {
+  font-size: 1rem;
+}
+
+/* Toggle Switch - Estilo moderno */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4a4a4a;
+  transition: 0.3s;
+  border-radius: 28px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 4px var(--primary-color);
+}
+
 /* Modal do Mapa */
 .map-modal-content {
   max-width: 90%;

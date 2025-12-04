@@ -376,9 +376,10 @@ app.post('/api/pedidos', async (req, res) => {
 
     // Inserir pedido
     const nowIso = new Date().toISOString();
+    const isPickup = cliente.isPickup ? 1 : 0;
     const result = await db.run(
-      'INSERT INTO pedidos (cliente_nome, cliente_telefone, cliente_endereco, forma_pagamento, total, distancia, valor_entrega, coordenadas_cliente, observacao_entrega, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [cliente.nome, cliente.telefone, cliente.endereco, cliente.pagamento, total, entrega?.distancia || null, (entrega?.price || entrega?.valor) || null, entrega?.coordenadas ? JSON.stringify(entrega.coordenadas) : null, (entrega && (entrega.addressNote || entrega.observacao)) || null, nowIso]
+      'INSERT INTO pedidos (cliente_nome, cliente_telefone, cliente_endereco, forma_pagamento, total, distancia, valor_entrega, coordenadas_cliente, observacao_entrega, data, is_pickup) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [cliente.nome, cliente.telefone, cliente.endereco, cliente.pagamento, total, entrega?.distancia || null, (entrega?.price || entrega?.valor) || null, entrega?.coordenadas ? JSON.stringify(entrega.coordenadas) : null, (entrega && (entrega.addressNote || entrega.observacao)) || null, nowIso, isPickup]
     );
     
     const pedidoId = result.lastID;
@@ -386,10 +387,18 @@ app.post('/api/pedidos', async (req, res) => {
     // Inserir itens do pedido
     for (const item of itens) {
       const adicionais = Array.isArray(item.adicionais) ? item.adicionais : [];
+      const buffet = Array.isArray(item.buffet) ? item.buffet : [];
       const observacao = item.observacao || '';
+      
+      // Combinar adicionais e buffet para salvar
+      const todosExtras = {
+        adicionais: adicionais,
+        buffet: buffet
+      };
+      
       await db.run(
         'INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario, adicionais, observacao) VALUES (?, ?, ?, ?, ?, ?)',
-        [pedidoId, item.produto.id, item.quantidade, item.produto.preco, JSON.stringify(adicionais), observacao]
+        [pedidoId, item.produto.id, item.quantidade, item.produto.preco, JSON.stringify(todosExtras), observacao]
       );
     }
     
@@ -703,6 +712,104 @@ app.delete('/api/categorias/:id', async (req, res) => {
   }
 });
 
+// ============================================================
+// ENDPOINTS PARA GERENCIAR BUFFET DO DIA
+// ============================================================
+
+// Listar itens do buffet (apenas ativos)
+app.get('/api/buffet', async (req, res) => {
+  try {
+    const itens = await db.all('SELECT * FROM buffet_dia WHERE ativo = 1 ORDER BY nome');
+    res.json({ success: true, itens });
+  } catch (error) {
+    console.error('Erro ao buscar buffet:', error);
+    res.status(500).json({ success: false, error: 'Erro ao buscar itens do buffet' });
+  }
+});
+
+// Listar todos os itens do buffet (incluindo inativos) - para admin
+app.get('/api/buffet/todos', async (req, res) => {
+  try {
+    const itens = await db.all('SELECT * FROM buffet_dia ORDER BY ativo DESC, nome');
+    res.json({ success: true, itens });
+  } catch (error) {
+    console.error('Erro ao buscar todos os itens do buffet:', error);
+    res.status(500).json({ success: false, error: 'Erro ao buscar itens do buffet' });
+  }
+});
+
+// Adicionar item ao buffet
+app.post('/api/buffet', async (req, res) => {
+  try {
+    const { nome } = req.body;
+    if (!nome || String(nome).trim() === '') {
+      return res.status(400).json({ success: false, error: 'Nome do item é obrigatório' });
+    }
+    const result = await db.run('INSERT INTO buffet_dia (nome, ativo) VALUES (?, 1)', [String(nome).trim()]);
+    res.json({ success: true, item: { id: result.lastID, nome: String(nome).trim(), ativo: 1 } });
+  } catch (error) {
+    console.error('Erro ao adicionar item ao buffet:', error);
+    res.status(500).json({ success: false, error: 'Erro ao adicionar item ao buffet' });
+  }
+});
+
+// Atualizar item do buffet
+app.put('/api/buffet/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, ativo } = req.body;
+    
+    const item = await db.get('SELECT * FROM buffet_dia WHERE id = ?', [id]);
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Item não encontrado' });
+    }
+    
+    const novoNome = nome !== undefined ? String(nome).trim() : item.nome;
+    const novoAtivo = ativo !== undefined ? (ativo ? 1 : 0) : item.ativo;
+    
+    await db.run('UPDATE buffet_dia SET nome = ?, ativo = ? WHERE id = ?', [novoNome, novoAtivo, id]);
+    res.json({ success: true, item: { id: parseInt(id), nome: novoNome, ativo: novoAtivo } });
+  } catch (error) {
+    console.error('Erro ao atualizar item do buffet:', error);
+    res.status(500).json({ success: false, error: 'Erro ao atualizar item do buffet' });
+  }
+});
+
+// Toggle ativo/inativo do item do buffet
+app.patch('/api/buffet/:id/toggle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await db.get('SELECT * FROM buffet_dia WHERE id = ?', [id]);
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Item não encontrado' });
+    }
+    
+    const novoAtivo = item.ativo ? 0 : 1;
+    await db.run('UPDATE buffet_dia SET ativo = ? WHERE id = ?', [novoAtivo, id]);
+    res.json({ success: true, item: { ...item, ativo: novoAtivo } });
+  } catch (error) {
+    console.error('Erro ao alternar status do item:', error);
+    res.status(500).json({ success: false, error: 'Erro ao alternar status do item' });
+  }
+});
+
+// Remover item do buffet
+app.delete('/api/buffet/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await db.get('SELECT * FROM buffet_dia WHERE id = ?', [id]);
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Item não encontrado' });
+    }
+    
+    await db.run('DELETE FROM buffet_dia WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao remover item do buffet:', error);
+    res.status(500).json({ success: false, error: 'Erro ao remover item do buffet' });
+  }
+});
+
 // Endpoint para buscar informações do cliente pelo WhatsApp ID
 app.get('/api/clientes/:whatsappId', async (req, res) => {
   try {
@@ -863,6 +970,8 @@ app.get('/api/custom-settings', (req, res) => {
       settings.restaurantName = process.env.RESTAURANT_NAME || settings.restaurantName || 'Brutus Burger';
       // Include app domain if provided
       if (process.env.APP_DOMAIN && !settings.domain) settings.domain = process.env.APP_DOMAIN;
+      // Garantir que pickupEnabled tenha um valor padrão
+      if (settings.pickupEnabled === undefined) settings.pickupEnabled = true;
       res.json(settings);
     } else {
       // Retornar configurações padrão com possibilidade de override via .env
@@ -877,7 +986,8 @@ app.get('/api/custom-settings', (req, res) => {
         pixName: '',
         logo: null,
         theme: 'dark',
-        domain: process.env.APP_DOMAIN || undefined
+        domain: process.env.APP_DOMAIN || undefined,
+        pickupEnabled: true
       });
     }
   } catch (error) {
@@ -1660,6 +1770,7 @@ async function startServer() {
       // Coluna já existe, ignorar erro
     }
     try { await db.run(`ALTER TABLE pedidos ADD COLUMN observacao_entrega TEXT`); } catch (e) { /* já existe */ }
+    try { await db.run(`ALTER TABLE pedidos ADD COLUMN is_pickup INTEGER DEFAULT 0`); } catch (e) { /* já existe */ }
     
     await db.run(`CREATE TABLE IF NOT EXISTS pedido_itens (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1690,6 +1801,14 @@ async function startServer() {
     await db.run(`CREATE TABLE IF NOT EXISTS categorias (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT UNIQUE
+    )`);
+
+    // Criar tabela de buffet do dia
+    await db.run(`CREATE TABLE IF NOT EXISTS buffet_dia (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      ativo INTEGER DEFAULT 1,
+      data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
     // Popular tabela de categorias com categorias existentes dos produtos

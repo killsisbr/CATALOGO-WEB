@@ -17,6 +17,8 @@ let adicionaisParaItensCarrinho = {};
 let whatsappId = null;
 let clienteInfo = null;
 let entregaInfo = null; // Informações de entrega
+let isPickupMode = false; // Modo de retirada no balcão
+let pickupEnabled = false; // Configuração de retirada habilitada
 // Categorias dinâmicas
 let categorias = [];
 let adicionaisCategoriaName = null;
@@ -72,6 +74,10 @@ const elements = {
   deliveryPrice: document.getElementById('delivery-price'),
   deliveryError: document.getElementById('delivery-error'),
   clientCoordinates: document.getElementById('client-coordinates'),
+  // Elementos de Retirada no Balcão
+  pickupSection: document.getElementById('pickup-section'),
+  pickupCheckbox: document.getElementById('pickup-checkbox'),
+  pickupInfoText: document.getElementById('pickup-info-text'),
   // Elementos da barra de pesquisa
   searchInput: document.getElementById('search-input'),
   searchButton: document.getElementById('search-button'),
@@ -143,7 +149,83 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.clientAddress) {
     elements.clientAddress.setAttribute('readonly', 'readonly');
   }
+  
+  // Inicializar Retirada no Balcão
+  inicializarRetiradaBalcao();
 });
+
+// ============================================================
+// FUNÇÃO PARA GERENCIAR RETIRADA NO BALCÃO
+// ============================================================
+function inicializarRetiradaBalcao() {
+  const pickupCheckbox = document.getElementById('pickup-checkbox');
+  const pickupInfoText = document.getElementById('pickup-info-text');
+  const deliveryInfo = document.getElementById('delivery-info');
+  const useLocationBtn = document.getElementById('use-location-btn');
+  const clientAddressPreview = document.getElementById('client-address-preview');
+  const pickupSection = document.getElementById('pickup-section');
+  
+  // Verificar se a seção de pickup deve ser exibida
+  // Usar window.pickupEnabled definido por apply-custom-settings.js
+  if (pickupSection) {
+    if (window.pickupEnabled === true || window.pickupEnabled === undefined) {
+      // Se pickupEnabled é true ou não foi definido (default: mostrar)
+      pickupSection.style.display = 'block';
+      console.log('🏪 Seção de retirada no balcão: VISÍVEL');
+    } else {
+      pickupSection.style.display = 'none';
+      console.log('🏪 Seção de retirada no balcão: OCULTA');
+    }
+  }
+  
+  if (!pickupCheckbox) {
+    console.log('⚠️ Elemento pickup-checkbox não encontrado');
+    return;
+  }
+  
+  pickupCheckbox.addEventListener('change', function() {
+    isPickupMode = this.checked;
+    console.log('🏪 Modo retirada no balcão:', isPickupMode);
+    
+    if (isPickupMode) {
+      // Ativar modo retirada
+      if (pickupInfoText) pickupInfoText.style.display = 'flex';
+      if (deliveryInfo) deliveryInfo.style.display = 'none';
+      if (useLocationBtn) useLocationBtn.style.display = 'none';
+      if (clientAddressPreview) {
+        clientAddressPreview.textContent = 'Retirada no Balcão';
+        clientAddressPreview.style.color = 'var(--primary-color)';
+      }
+      
+      // Zerar taxa de entrega
+      entregaInfo = {
+        distancia: 0,
+        price: 0,
+        taxa: 0,
+        isPickup: true
+      };
+      
+      // Atualizar totais
+      atualizarCarrinho();
+    } else {
+      // Desativar modo retirada
+      if (pickupInfoText) pickupInfoText.style.display = 'none';
+      if (useLocationBtn) useLocationBtn.style.display = 'block';
+      if (clientAddressPreview) {
+        clientAddressPreview.textContent = 'Nenhum endereço selecionado';
+        clientAddressPreview.style.color = '';
+      }
+      
+      // Limpar info de entrega
+      entregaInfo = null;
+      
+      // Atualizar totais
+      atualizarCarrinho();
+    }
+  });
+  
+  console.log('✅ Retirada no balcão inicializada');
+}
 
 // ============================================================
 // FUNÇÃO PARA CARREGAR DADOS DO CACHE LOCAL
@@ -1298,14 +1380,20 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
   if (carrinho.length === 0) return;
   
   // Validar campos obrigatórios (telefone não é obrigatório pois já veio pelo WhatsApp)
-  if (!elements.clientName.value || !elements.clientAddress.value) {
-    mostrarNotificacao('Por favor, preencha seu nome e endereço!');
+  // Se for retirada no balcão, não precisa de endereço
+  if (!elements.clientName.value) {
+    mostrarNotificacao('Por favor, preencha seu nome!');
     return;
   }
   
-  // Verificar se o valor da entrega foi calculado
-  // Se a entregaInfo.price for 0 (taxa mínima), ainda é considerado válido
-  if (!entregaInfo || entregaInfo.price === null || entregaInfo.price === undefined) {
+  if (!isPickupMode && !elements.clientAddress.value) {
+    mostrarNotificacao('Por favor, preencha seu endereço ou selecione Retirada no Balcão!');
+    return;
+  }
+  
+  // Verificar se o valor da entrega foi calculado (não necessário se for retirada)
+  // Se a entregaInfo.price for 0 (taxa mínima ou retirada), ainda é considerado válido
+  if (!isPickupMode && (!entregaInfo || entregaInfo.price === null || entregaInfo.price === undefined)) {
     // Verificar também no objeto global window
     if (window.entregaInfo && (window.entregaInfo.price !== null && window.entregaInfo.price !== undefined)) {
       entregaInfo = window.entregaInfo;
@@ -1344,10 +1432,11 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
   // Preparar dados do cliente para salvar no banco
   const clienteData = {
     nome: elements.clientName.value,
-    endereco: elements.clientAddress.value,
+    endereco: isPickupMode ? 'Retirada no Balcão' : elements.clientAddress.value,
     whatsappId: whatsappId,
     pagamento: elements.paymentMethod.value,
-    troco: elements.paymentMethod.value === 'dinheiro' ? parseFloat(elements.valorPago.value) : null
+    troco: elements.paymentMethod.value === 'dinheiro' ? parseFloat(elements.valorPago.value) : null,
+    isPickup: isPickupMode
   };
   
   // Salvar/atualizar informações do cliente no banco
