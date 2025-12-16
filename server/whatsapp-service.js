@@ -27,15 +27,15 @@ class WhatsAppService {
     this.robotEnabledCallback = null; // Função para verificar se o robô está ligado
     // Distância máxima (km) para incluir link de mapa (padrão 70km)
     this.deliveryLinkMaxDistanceKm = parseFloat(process.env.DELIVERY_LINK_MAX_DISTANCE_KM || '70');
-  // Caminho para armazenar log de welcome (por dia)
-  this.welcomeLogPath = path.join(SESSIONS_DIR, 'welcome-log.json');
-  this.welcomeLog = this._loadWelcomeLog();
-    
+    // Caminho para armazenar log de welcome (por dia)
+    this.welcomeLogPath = path.join(SESSIONS_DIR, 'welcome-log.json');
+    this.welcomeLog = this._loadWelcomeLog();
+
     // Intervalo (em horas) para reenvio do welcome. Pode ser parametrizado via .env
     const envHours = parseFloat(process.env.WELCOME_RESEND_HOURS);
     this.welcomeResendHours = (!isNaN(envHours) && envHours > 0) ? envHours : 12;
     console.log('🔧 Welcome resend interval (hours):', this.welcomeResendHours);
-    
+
     // Debug: Verificar se o ID do grupo foi carregado
     console.log('🔧 WhatsApp Service - Group ID configurado:', this.groupId);
     console.log('🔧 Tipo do Group ID:', typeof this.groupId);
@@ -51,7 +51,7 @@ class WhatsAppService {
         const content = fs.readFileSync(this.welcomeLogPath, 'utf8') || '{}';
         return JSON.parse(content);
       }
-      
+
     } catch (err) {
       console.warn('Não foi possível ler welcome-log.json:', err && err.message);
     }
@@ -169,7 +169,7 @@ class WhatsAppService {
     if (!this.lastQRCode) {
       throw new Error('Nenhum QR Code disponível. O cliente do WhatsApp ainda não foi inicializado ou já está conectado.');
     }
-    
+
     try {
       // Gerar QR Code como Data URL
       const dataURL = await qrcodeImage.toDataURL(this.lastQRCode, { width: 300 });
@@ -196,17 +196,17 @@ class WhatsAppService {
     try {
       const chats = await this.client.getChats();
       const groups = chats.filter(chat => chat.isGroup);
-      
+
       console.log('\n📋 Grupos disponíveis no WhatsApp:');
       console.log('═'.repeat(60));
-      
+
       groups.forEach((group, index) => {
         console.log(`${index + 1}. Nome: ${group.name}`);
         console.log(`   ID: ${group.id._serialized}`);
         console.log(`   Participantes: ${group.participants.length}`);
         console.log('─'.repeat(60));
       });
-      
+
       return groups.map(g => ({
         name: g.name,
         id: g.id._serialized,
@@ -238,53 +238,59 @@ class WhatsAppService {
           pushname: pushname || 'Contato'
         };
       }
-    const whatsappId = contact.id._serialized;
-    
+      const whatsappId = contact.id._serialized;
+
       // Ignorar mensagens de grupos e transmissões
       if (chat.isGroup) {
-      console.log(`Mensagem de grupo ignorada de ${contact.pushname} (${whatsappId}): ${message.body}`);
-      return;
-    }
-    
-    if (message.broadcast) {
-      console.log(`Mensagem de transmissão ignorada de ${contact.pushname} (${whatsappId}): ${message.body}`);
-      return;
-    }
-    
-    console.log(`Mensagem recebida de ${contact.pushname} (${whatsappId}): ${message.body}`);
+        const grpMsgPreview = message.body && message.body.length > 50 ? message.body.substring(0, 50) + '...' : message.body;
+        console.log(`Mensagem de grupo ignorada de ${contact.pushname}: ${grpMsgPreview}`);
+        return;
+      }
 
-    // Verificar se o robô está ligado
-    if (!this.isRobotEnabled()) {
-      console.log(`🤖 Robô desligado - Mensagem de ${contact.pushname} NÃO respondida`);
-      return;
-    }
+      if (message.broadcast) {
+        const brdMsgPreview = message.body && message.body.length > 50 ? message.body.substring(0, 50) + '...' : message.body;
+        console.log(`Mensagem de transmissão ignorada de ${contact.pushname}: ${brdMsgPreview}`);
+        return;
+      }
 
-    // Comandos disponíveis
-    const msg = message.body.toLowerCase().trim();
-    // Verificar se já enviamos o link de boas-vindas hoje para este usuário
-    let welcomeSentNow = false;
-    try {
-      if (this.shouldSendWelcomeToday(whatsappId)) {
+      // Log de mensagem recebida (truncar se muito longa para evitar spam de base64)
+      const msgPreview = message.body && message.body.length > 100
+        ? message.body.substring(0, 100) + '... [truncado]'
+        : message.body;
+      console.log(`Mensagem recebida de ${contact.pushname} (${whatsappId}): ${msgPreview}`);
+
+      // Verificar se o robô está ligado
+      if (!this.isRobotEnabled()) {
+        console.log(`🤖 Robô desligado - Mensagem de ${contact.pushname} NÃO respondida`);
+        return;
+      }
+
+      // Comandos disponíveis
+      const msg = message.body.toLowerCase().trim();
+      // Verificar se já enviamos o link de boas-vindas hoje para este usuário
+      let welcomeSentNow = false;
+      try {
+        if (this.shouldSendWelcomeToday(whatsappId)) {
+          await this.sendWelcomeMessage(chat, whatsappId);
+          this.markWelcomeSent(whatsappId);
+          welcomeSentNow = true;
+          console.log(`✅ Enviado link de boas-vindas para ${whatsappId} (daily)`);
+        }
+      } catch (err) {
+        console.warn('Erro ao enviar welcome automático:', err && err.message);
+      }
+
+      // Se já enviamos a mensagem de boas-vindas agora, pular o ramo de cumprimento para evitar duplicação
+      if (!welcomeSentNow && (msg === 'oi' || msg === 'olá' || msg === 'ola' || msg === 'oola' || msg === 'opa' || msg === 'noite')) {
         await this.sendWelcomeMessage(chat, whatsappId);
-        this.markWelcomeSent(whatsappId);
-        welcomeSentNow = true;
-        console.log(`✅ Enviado link de boas-vindas para ${whatsappId} (daily)`);
+      } else if (msg === 'pedir' || msg === 'pedido' || msg.startsWith('pedido')) {
+        await this.handleOrderRequest(chat, whatsappId);
+      } else if (msg === 'ajuda' || msg === 'menu' || msg === 'cardapio' || msg === 'cardápio') {
+        await this.sendHelpMessage(chat);
       }
     } catch (err) {
-      console.warn('Erro ao enviar welcome automático:', err && err.message);
+      console.error('Erro no handleMessage:', err && err.message);
     }
-    
-    // Se já enviamos a mensagem de boas-vindas agora, pular o ramo de cumprimento para evitar duplicação
-    if (!welcomeSentNow && (msg === 'oi' || msg === 'olá' || msg === 'ola' || msg === 'oola' || msg === 'opa' || msg === 'noite')) {
-      await this.sendWelcomeMessage(chat, whatsappId);
-    } else if (msg === 'pedir' || msg === 'pedido' || msg.startsWith('pedido')) {
-      await this.handleOrderRequest(chat, whatsappId);
-    } else if (msg === 'ajuda' || msg === 'menu' || msg === 'cardapio' || msg === 'cardápio') {
-      await this.sendHelpMessage(chat);
-    }
-  } catch (err) {
-    console.error('Erro no handleMessage:', err && err.message);
-  }
   }
 
   // Enviar mensagem de boas-vindas
@@ -313,7 +319,7 @@ class WhatsAppService {
 3. Confirme e receba atualizações pelo WhatsApp
 
 💬 Qualquer dúvida, estou aqui para ajudar!`;
-    
+
     await chat.sendMessage(helpMessage);
   }
 
@@ -325,7 +331,7 @@ class WhatsAppService {
     const quickLink = `https://${appDomainQuick}/pedido?whatsapp=${encodeURIComponent(sanitizedNumberQuick)}`;
 
     const orderMessage = `🍔 Vamos criar seu pedido!\n\nClique no link abaixo para acessar seu pedido personalizado:\n${quickLink}\n\nApós finalizar seu pedido no site, você receberá um resumo aqui no WhatsApp!`;
-    
+
     await chat.sendMessage(orderMessage);
   }
 
@@ -346,8 +352,8 @@ class WhatsAppService {
     const R = 6371; // km
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lng2 - lng1);
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
@@ -489,8 +495,8 @@ class WhatsAppService {
     }
 
     // Delivery price and location link are handled within _buildOrderSummaryMessage
-  // Montar a mensagem de resumo de forma controlada (sem indentação extra)
-  // Se a forma de pagamento for PIX, anexar a chave PIX configurada nas custom-settings
+    // Montar a mensagem de resumo de forma controlada (sem indentação extra)
+    // Se a forma de pagamento for PIX, anexar a chave PIX configurada nas custom-settings
     try {
       const pagamento = (orderData.cliente && orderData.cliente.pagamento) ? String(orderData.cliente.pagamento).toLowerCase() : '';
       if (pagamento.includes('pix')) {
@@ -558,11 +564,11 @@ class WhatsAppService {
       'pronto': '✅ Seu pedido está pronto e será entregue em breve!',
       'entregue': '🎉 Seu pedido foi entregue! Agradecemos sua preferência!'
     };
-    
+
     const statusMessage = `📢 *Atualização do Pedido #${orderId}*
     
 ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
-    
+
     await chat.sendMessage(statusMessage);
   }
 
@@ -575,7 +581,7 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
       console.log('💡 Configure WHATSAPP_GROUP_ID no arquivo .env');
       return;
     }
-    
+
     console.log('✅ Enviando pedido para o grupo:', this.groupId);
 
     // Verificar se o cliente está conectado
@@ -591,27 +597,27 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
         clienteTelefone: orderData.cliente?.telefone,
         clienteNome: orderData.cliente?.nome
       });
-      
+
       // Formatar o ID do grupo corretamente (deve terminar com @g.us)
       let formattedGroupId = this.groupId;
       if (!formattedGroupId.includes('@')) {
         formattedGroupId = `${formattedGroupId}@g.us`;
       }
-      
+
       console.log('📱 ID formatado do grupo:', formattedGroupId);
-      
+
       // Obter o chat do grupo
       const groupChat = await this.client.getChatById(formattedGroupId);
-      
+
       // Preparar a lista de itens
       let itemsList = '';
       let subtotal = 0;
-      
+
       orderData.itens.forEach(item => {
         const itemTotal = item.produto.preco * item.quantidade;
         subtotal += itemTotal;
         itemsList += `• ${item.quantidade}x ${item.produto.nome} - R$ ${itemTotal.toFixed(2).replace('.', ',')}\n`;
-        
+
         // Adicionar adicionais se houver
         if (item.adicionais && item.adicionais.length > 0) {
           item.adicionais.forEach(adicional => {
@@ -620,17 +626,17 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
             itemsList += `  + ${adicional.nome || adicional.produto_nome} - R$ ${(precoAdicional * item.quantidade).toFixed(2).replace('.', ',')}\n`;
           });
         }
-        
+
         // Adicionar observações se houver
         if (item.observacao && item.observacao.trim()) {
           itemsList += `  📝 ${item.observacao}\n`;
         }
       });
-      
+
       // Calcular taxa de entrega
       const totalPedido = orderData.total || 0;
       const taxaEntrega = totalPedido - subtotal;
-      
+
       // Verificar se há informações de entrega (aceitar 'coordenadas' ou 'coordinates')
       // MAS não gerar link se o endereço foi digitado manualmente
       let deliveryInfo = '';
@@ -663,13 +669,13 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
           // ignore
         }
       }
-      
+
       // Verificar se há informações de troco
       let changeInfo = '';
       if (orderData.cliente.troco !== null && orderData.cliente.troco !== undefined) {
         const valorPago = parseFloat(orderData.cliente.troco);
         const total = orderData.total;
-        
+
         // Se o valor pago for 0, significa que o cliente quer troco sem especificar valor
         if (valorPago === 0) {
           changeInfo = `💵 *Troco*: Cliente deseja troco (valor não especificado)\n`;
@@ -680,7 +686,7 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
           changeInfo = `💵 *Troco*: Sem troco (valor exato)\n`;
         }
       }
-      
+
       // Criar link para o WhatsApp do cliente
       // Garantir que temos um telefone válido (usar apenas whatsappId do cliente)
       try {
@@ -715,51 +721,51 @@ ${statusMessages[status] || 'Seu pedido foi atualizado!'}`;
       } else {
         console.warn('⚠️ Telefone do cliente não encontrado em orderData.cliente:', orderData.cliente);
       }
-      
-  // Capturar observação do local (se houver) para o grupo
-  let addressNoteGroup = '';
-  if (orderData.entrega && (orderData.entrega.addressNote || orderData.entrega.observacao)) {
-    addressNoteGroup = String(orderData.entrega.addressNote || orderData.entrega.observacao).trim();
-  }
 
-  // Montar a mensagem para o grupo de forma controlada (sem indentação extra)
-  const groupLines = [];
-  groupLines.push(`🍔 *NOVO PEDIDO #${orderData.pedidoId}*`);
-  groupLines.push('');
-  groupLines.push('━━━━━━━━━━━━━━━━━━━━');
-  groupLines.push('📦 *ITENS DO PEDIDO*');
-  groupLines.push(itemsList.trim());
-  groupLines.push('');
-  groupLines.push('━━━━━━━━━━━━━━━━━━━━');
-  groupLines.push('💰 *VALORES*');
-  groupLines.push(`Subtotal dos itens: R$ ${subtotal.toFixed(2).replace('.', ',')}`);
-  
-  if (taxaEntrega > 0) {
-    groupLines.push(`Taxa de entrega: R$ ${taxaEntrega.toFixed(2).replace('.', ',')}`);
-  } else {
-    groupLines.push('Taxa de entrega: R$ 0,00 (retirada)');
-  }
-  
-  groupLines.push(`*TOTAL DO PEDIDO: R$ ${totalPedido.toFixed(2).replace('.', ',')}*`);
-  groupLines.push('');
-  groupLines.push('━━━━━━━━━━━━━━━━━━━━');
-  groupLines.push('👤 *DADOS DO CLIENTE*');
-  groupLines.push(`Nome: ${orderData.cliente.nome}`);
-  groupLines.push(`Endereço: ${orderData.cliente.endereco}`);
-  groupLines.push(`Pagamento: ${orderData.cliente.pagamento}`);
-  if (changeInfo) groupLines.push(changeInfo.trim());
-  if (clientWhatsAppLink) groupLines.push(clientWhatsAppLink.trim());
-  if (deliveryInfo) groupLines.push(deliveryInfo.trim());
-  if (addressNoteGroup) groupLines.push(`📝 Observações do local: ${addressNoteGroup}`);
-  groupLines.push('');
+      // Capturar observação do local (se houver) para o grupo
+      let addressNoteGroup = '';
+      if (orderData.entrega && (orderData.entrega.addressNote || orderData.entrega.observacao)) {
+        addressNoteGroup = String(orderData.entrega.addressNote || orderData.entrega.observacao).trim();
+      }
 
-  const groupMessage = groupLines.filter(Boolean).join('\n');
-  // Enviar a mensagem para o grupo
-  await groupChat.sendMessage(groupMessage);
+      // Montar a mensagem para o grupo de forma controlada (sem indentação extra)
+      const groupLines = [];
+      groupLines.push(`🍔 *NOVO PEDIDO #${orderData.pedidoId}*`);
+      groupLines.push('');
+      groupLines.push('━━━━━━━━━━━━━━━━━━━━');
+      groupLines.push('📦 *ITENS DO PEDIDO*');
+      groupLines.push(itemsList.trim());
+      groupLines.push('');
+      groupLines.push('━━━━━━━━━━━━━━━━━━━━');
+      groupLines.push('💰 *VALORES*');
+      groupLines.push(`Subtotal dos itens: R$ ${subtotal.toFixed(2).replace('.', ',')}`);
+
+      if (taxaEntrega > 0) {
+        groupLines.push(`Taxa de entrega: R$ ${taxaEntrega.toFixed(2).replace('.', ',')}`);
+      } else {
+        groupLines.push('Taxa de entrega: R$ 0,00 (retirada)');
+      }
+
+      groupLines.push(`*TOTAL DO PEDIDO: R$ ${totalPedido.toFixed(2).replace('.', ',')}*`);
+      groupLines.push('');
+      groupLines.push('━━━━━━━━━━━━━━━━━━━━');
+      groupLines.push('👤 *DADOS DO CLIENTE*');
+      groupLines.push(`Nome: ${orderData.cliente.nome}`);
+      groupLines.push(`Endereço: ${orderData.cliente.endereco}`);
+      groupLines.push(`Pagamento: ${orderData.cliente.pagamento}`);
+      if (changeInfo) groupLines.push(changeInfo.trim());
+      if (clientWhatsAppLink) groupLines.push(clientWhatsAppLink.trim());
+      if (deliveryInfo) groupLines.push(deliveryInfo.trim());
+      if (addressNoteGroup) groupLines.push(`📝 Observações do local: ${addressNoteGroup}`);
+      groupLines.push('');
+
+      const groupMessage = groupLines.filter(Boolean).join('\n');
+      // Enviar a mensagem para o grupo
+      await groupChat.sendMessage(groupMessage);
       console.log(`✅ Pedido #${orderData.pedidoId} enviado com sucesso para o grupo de entregas`);
     } catch (error) {
       console.error('❌ Erro ao enviar pedido para o grupo de entregas:', error.message);
-      
+
       // Mensagens de erro mais específicas
       if (error.message.includes('Evaluation failed')) {
         console.error('💡 Dica: Verifique se:');

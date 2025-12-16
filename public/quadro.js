@@ -161,8 +161,40 @@ function criarCardPedido(pedido) {
     const nextStatus = getNextStatus(pedido.status);
     const nextLabel = getStatusLabel(nextStatus);
 
+    // Info extra: pagamento, entrega/retirada, troco
+    const pagamento = pedido.pagamento || pedido.forma_pagamento || '';
+    const isPickup = pedido.is_pickup === 1 || pedido.is_pickup === true;
+    const temTroco = pedido.troco && parseFloat(pedido.troco) > 0;
+
+    // Ícones compactos para info extra
+    const pagamentoIcon = pagamento.toLowerCase().includes('pix') ? 'fa-qrcode'
+        : pagamento.toLowerCase().includes('cartao') || pagamento.toLowerCase().includes('cartão') ? 'fa-credit-card'
+            : pagamento.toLowerCase().includes('dinheiro') ? 'fa-money-bill-wave'
+                : 'fa-wallet';
+
+    const entregaIcon = isPickup ? 'fa-store' : 'fa-motorcycle';
+    const entregaTexto = isPickup ? 'Retirar' : 'Entrega';
+    const entregaCor = isPickup ? '#9b59b6' : '#3498db';
+
+    // Cores dos badges de pagamento
+    const pagamentoCor = pagamento.toLowerCase().includes('pix') ? '#00b894'
+        : pagamento.toLowerCase().includes('cartao') || pagamento.toLowerCase().includes('cartão') ? '#0984e3'
+            : pagamento.toLowerCase().includes('dinheiro') ? '#fdcb6e'
+                : '#636e72';
+
     card.innerHTML = `
-    ${isBlacklisted ? '<div class="blacklist-badge"><i class="fas fa-exclamation-triangle"></i> GOLPISTA</div>' : ''}
+    <div class="card-badges" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+      ${isBlacklisted ? '<div class="blacklist-badge"><i class="fas fa-exclamation-triangle"></i> GOLPISTA</div>' : ''}
+      <div class="payment-badge" style="background: ${pagamentoCor}; color: ${pagamento.toLowerCase().includes('dinheiro') ? '#2d3436' : 'white'}; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+        <i class="fas ${pagamentoIcon}"></i> ${pagamento ? pagamento.toUpperCase().substring(0, 10) : 'PAGAMENTO'}
+      </div>
+      <div class="delivery-badge" style="background: ${entregaCor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+        <i class="fas ${entregaIcon}"></i> ${entregaTexto.toUpperCase()}
+      </div>
+      ${temTroco ? `<div class="troco-badge" style="background: #e67e22; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+        <i class="fas fa-coins"></i> TROCO
+      </div>` : ''}
+    </div>
     <div class="order-card-header">
       <span class="order-number">#${pedido.id}</span>
       <span class="order-time">${hora}</span>
@@ -302,20 +334,28 @@ function abrirDetalhes(pedidoId) {
     const itens = p.itens || [];
 
     if (itens.length === 0) {
-        itensContainer.innerHTML = '<p style="color: var(--text-muted);">Nenhum item registrado</p>';
+        itensContainer.innerHTML = '\u003cp style=\"color: var(--text-muted);\"\u003eNenhum item registrado\u003c/p\u003e';
     } else {
         itensContainer.innerHTML = itens.map(item => {
-            // Extrair adicionais - pode estar em item.adicionais ou serializado em JSON
+            // Extrair adicionais e buffet - pode estar em item.adicionais ou serializado em JSON
             let adicionais = [];
+            let buffetList = [];
             try {
                 if (item.adicionais) {
                     if (typeof item.adicionais === 'string') {
                         const parsed = JSON.parse(item.adicionais);
-                        adicionais = parsed.adicionais || parsed || [];
+                        // Novo formato: objeto com adicionais e buffet
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            adicionais = parsed.adicionais || [];
+                            buffetList = parsed.buffet || [];
+                        } else {
+                            adicionais = parsed || [];
+                        }
                     } else if (Array.isArray(item.adicionais)) {
                         adicionais = item.adicionais;
                     } else if (typeof item.adicionais === 'object') {
                         adicionais = item.adicionais.adicionais || [];
+                        buffetList = item.adicionais.buffet || [];
                     }
                 }
             } catch (e) {
@@ -343,6 +383,14 @@ function abrirDetalhes(pedidoId) {
                     const preco = parseFloat(a.preco || a.price || 0);
                     return preco > 0 ? `${nome} (+R$${preco.toFixed(2).replace('.', ',')})` : nome;
                 }).join(', ')}
+                   </div>`
+                : '';
+
+            // Gerar HTML do buffet (para marmitas)
+            const buffetHtml = buffetList.length > 0
+                ? `<div class="item-buffet" style="font-size: 0.85rem; color: #3498db; margin-top: 4px; padding-left: 10px;">
+                    <i class="fas fa-utensils" style="margin-right: 5px;"></i>
+                    Buffet: ${buffetList.map(b => b.nome || b.name || b).join(', ')}
                    </div>`
                 : '';
 
@@ -377,6 +425,7 @@ function abrirDetalhes(pedidoId) {
                     </div>
                 </div>
                 ${adicionaisHtml}
+                ${buffetHtml}
                 ${obsHtml}
             </div>
             `;
@@ -1093,5 +1142,359 @@ async function confirmarAdicionarItem() {
     } catch (error) {
         console.error('Erro ao adicionar item:', error);
         showToast('Erro ao adicionar item.', 'error');
+    }
+}
+
+// ============================================================
+// PAINEL ADMINISTRATIVO
+// ============================================================
+
+let adminProdutos = [];
+let adminPeriodo = 'day';
+let adminDadosVendas = [];
+
+// Abrir painel administrativo
+function abrirPainelAdmin() {
+    document.getElementById('admin-panel-modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    mudarSecaoAdmin('dashboard');
+}
+
+// Fechar painel administrativo
+function fecharPainelAdmin() {
+    document.getElementById('admin-panel-modal').classList.remove('show');
+    document.body.style.overflow = 'auto';
+}
+
+// Mudar seção do painel admin
+function mudarSecaoAdmin(secao) {
+    // Atualizar botões da sidebar
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.section === secao) btn.classList.add('active');
+    });
+
+    // Mostrar seção correta
+    document.querySelectorAll('.admin-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    document.getElementById(`admin-section-${secao}`).style.display = 'block';
+
+    // Carregar dados da seção
+    if (secao === 'dashboard') carregarDashboard();
+    else if (secao === 'cardapio') carregarCardapioAdmin();
+    else if (secao === 'configuracoes') carregarConfiguracoesAdmin();
+    else if (secao === 'clientes') carregarClientesAdmin();
+    else if (secao === 'whatsapp') verificarStatusWhatsApp();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+
+function filtrarPeriodoDash(periodo) {
+    adminPeriodo = periodo;
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.period === periodo) btn.classList.add('active');
+    });
+    carregarDashboard();
+}
+
+async function carregarDashboard() {
+    try {
+        // Buscar todos os pedidos (incluindo histórico)
+        const response = await fetch('/api/pedidos?all=true');
+        const data = await response.json();
+        adminDadosVendas = data.pedidos || [];
+
+        // Filtrar por período
+        const agora = new Date();
+        const pedidosFiltrados = adminDadosVendas.filter(p => {
+            if (adminPeriodo === 'all') return true;
+            const dataPedido = new Date(p.data);
+            switch (adminPeriodo) {
+                case 'day':
+                    return dataPedido.toDateString() === agora.toDateString();
+                case 'week':
+                    const umaSemanaAtras = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return dataPedido >= umaSemanaAtras;
+                case 'month':
+                    return dataPedido.getMonth() === agora.getMonth() && dataPedido.getFullYear() === agora.getFullYear();
+                case 'year':
+                    return dataPedido.getFullYear() === agora.getFullYear();
+                default:
+                    return true;
+            }
+        });
+
+        // Calcular estatísticas
+        const faturamento = pedidosFiltrados.reduce((acc, p) => acc + parseFloat(p.total || 0), 0);
+        const numPedidos = pedidosFiltrados.length;
+        const ticketMedio = numPedidos > 0 ? faturamento / numPedidos : 0;
+        const clientesUnicos = new Set(pedidosFiltrados.map(p => p.cliente_telefone || p.cliente_nome)).size;
+
+        // Atualizar cards
+        document.getElementById('dash-faturamento').textContent = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-pedidos').textContent = numPedidos;
+        document.getElementById('dash-ticket').textContent = `R$ ${ticketMedio.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-clientes').textContent = clientesUnicos;
+
+        // Ranking de produtos
+        const vendasPorProduto = {};
+        pedidosFiltrados.forEach(p => {
+            (p.itens || []).forEach(item => {
+                const nome = item.produto_nome || item.nome || 'Produto';
+                const qty = item.quantidade || 1;
+                if (!vendasPorProduto[nome]) vendasPorProduto[nome] = { nome, quantidade: 0, valor: 0 };
+                vendasPorProduto[nome].quantidade += qty;
+                vendasPorProduto[nome].valor += parseFloat(item.preco_unitario || 0) * qty;
+            });
+        });
+
+        const ranking = Object.values(vendasPorProduto).sort((a, b) => b.quantidade - a.quantidade).slice(0, 10);
+
+        const rankingContainer = document.getElementById('produtos-ranking');
+        if (ranking.length === 0) {
+            rankingContainer.innerHTML = '<p style="color: var(--text-muted);">Nenhum produto vendido neste período</p>';
+        } else {
+            rankingContainer.innerHTML = ranking.map((prod, idx) => {
+                const posClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'normal';
+                return `
+                    <div class="ranking-item">
+                        <div class="ranking-position ${posClass}">${idx + 1}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${prod.nome}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">${prod.quantidade} vendido(s)</div>
+                        </div>
+                        <div style="color: var(--primary); font-weight: 700;">R$ ${prod.valor.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar dashboard:', error);
+    }
+}
+
+// ============================================================
+// CARDÁPIO
+// ============================================================
+
+async function carregarCardapioAdmin() {
+    try {
+        const response = await fetch('/api/produtos');
+        adminProdutos = await response.json();
+
+        const container = document.getElementById('admin-produtos-lista');
+        if (adminProdutos.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum produto cadastrado</p>';
+            return;
+        }
+
+        container.innerHTML = adminProdutos.map(prod => `
+            <div class="produto-card-admin">
+                <img src="${prod.imagem || '/placeholder.png'}" alt="${prod.nome}" onerror="this.src='/placeholder.png'">
+                <h4>${prod.nome}</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="price">R$ ${parseFloat(prod.preco || 0).toFixed(2).replace('.', ',')}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">${prod.categoria || 'Sem categoria'}</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editarProdutoAdmin(${prod.id})" style="background: var(--info); color: white;">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button onclick="excluirProdutoAdmin(${prod.id})" style="background: var(--danger); color: white;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao carregar cardápio:', error);
+    }
+}
+
+function abrirModalAdicionarProduto() {
+    // Por enquanto, redirecionar para admin.html
+    if (confirm('Deseja abrir a página de administração de produtos em nova aba?')) {
+        window.open('/admin.html', '_blank');
+    }
+}
+
+function abrirModalCategorias() {
+    if (confirm('Deseja abrir a página de administração de categorias em nova aba?')) {
+        window.open('/admin.html', '_blank');
+    }
+}
+
+function editarProdutoAdmin(id) {
+    if (confirm('Deseja abrir a página de edição em nova aba?')) {
+        window.open(`/admin.html?edit=${id}`, '_blank');
+    }
+}
+
+async function excluirProdutoAdmin(id) {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+
+    try {
+        const response = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Produto excluído com sucesso!', 'success');
+            carregarCardapioAdmin();
+        } else {
+            showToast('Erro ao excluir produto.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir produto:', error);
+        showToast('Erro ao excluir produto.', 'error');
+    }
+}
+
+// ============================================================
+// CONFIGURAÇÕES
+// ============================================================
+
+async function carregarConfiguracoesAdmin() {
+    try {
+        const response = await fetch('/api/custom-settings');
+        const settings = await response.json();
+
+        document.getElementById('config-nome-loja').value = settings.restaurantName || '';
+        document.getElementById('config-hora-abre').value = settings.openTime || '18:00';
+        document.getElementById('config-hora-fecha').value = settings.closeTime || '23:00';
+        document.getElementById('config-pix-key').value = settings.pixKey || '';
+        document.getElementById('config-pix-name').value = settings.pixName || '';
+        document.getElementById('config-taxa-base').value = settings.baseFee || 5;
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+async function salvarConfiguracoesAdmin() {
+    try {
+        const settings = {
+            restaurantName: document.getElementById('config-nome-loja').value,
+            openTime: document.getElementById('config-hora-abre').value,
+            closeTime: document.getElementById('config-hora-fecha').value,
+            pixKey: document.getElementById('config-pix-key').value,
+            pixName: document.getElementById('config-pix-name').value,
+            baseFee: parseFloat(document.getElementById('config-taxa-base').value) || 5
+        };
+
+        const response = await fetch('/api/custom-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showToast('Configurações salvas com sucesso!', 'success');
+        } else {
+            showToast('Erro ao salvar configurações.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar configurações:', error);
+        showToast('Erro ao salvar configurações.', 'error');
+    }
+}
+
+// ============================================================
+// CLIENTES
+// ============================================================
+
+async function carregarClientesAdmin() {
+    try {
+        const response = await fetch('/api/pedidos?all=true');
+        const data = await response.json();
+        const todosPedidos = data.pedidos || [];
+
+        // Agrupar por cliente
+        const clientesMap = {};
+        todosPedidos.forEach(p => {
+            const key = p.cliente_telefone || p.cliente_nome || 'Desconhecido';
+            if (!clientesMap[key]) {
+                clientesMap[key] = {
+                    nome: p.cliente_nome || 'Cliente',
+                    telefone: p.cliente_telefone || '',
+                    pedidos: 0,
+                    valor: 0
+                };
+            }
+            clientesMap[key].pedidos++;
+            clientesMap[key].valor += parseFloat(p.total || 0);
+        });
+
+        const clientes = Object.values(clientesMap);
+        const clientesRecorrentes = clientes.filter(c => c.pedidos > 1).length;
+
+        document.getElementById('clientes-total').textContent = clientes.length;
+        document.getElementById('clientes-recorrentes').textContent = clientesRecorrentes;
+
+        // Top clientes por valor
+        const topClientes = clientes.sort((a, b) => b.valor - a.valor).slice(0, 10);
+
+        const container = document.getElementById('top-clientes-lista');
+        if (topClientes.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum cliente encontrado</p>';
+        } else {
+            container.innerHTML = topClientes.map((cliente, idx) => `
+                <div class="cliente-item">
+                    <div class="ranking-position ${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'normal'}">${idx + 1}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${cliente.nome}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${cliente.pedidos} pedido(s)</div>
+                    </div>
+                    <div style="color: var(--primary); font-weight: 700;">R$ ${cliente.valor.toFixed(2).replace('.', ',')}</div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+    }
+}
+
+// ============================================================
+// WHATSAPP
+// ============================================================
+
+async function verificarStatusWhatsApp() {
+    const container = document.getElementById('whatsapp-qr-area');
+    container.innerHTML = '<p style="color: var(--text-muted);">Verificando...</p>';
+
+    try {
+        const response = await fetch('/api/whatsapp/status');
+        const data = await response.json();
+
+        if (data.connected) {
+            container.innerHTML = `
+                <div style="color: #25d366; font-size: 3rem; margin-bottom: 15px;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 style="color: #25d366; margin-bottom: 10px;">WhatsApp Conectado!</h3>
+                <p style="color: var(--text-muted);">O robô está pronto para enviar mensagens.</p>
+            `;
+        } else if (data.qrCodeAvailable) {
+            const qrResponse = await fetch('/api/whatsapp/qrcode');
+            const qrData = await qrResponse.json();
+
+            container.innerHTML = `
+                <p style="margin-bottom: 15px;">Escaneie o QR Code com o WhatsApp:</p>
+                <img src="${qrData.dataUrl}" alt="QR Code" style="max-width: 250px; border-radius: 12px; background: white; padding: 15px;">
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="color: var(--danger); font-size: 3rem; margin-bottom: 15px;">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <h3 style="color: var(--danger); margin-bottom: 10px;">WhatsApp Desconectado</h3>
+                <p style="color: var(--text-muted);">Aguarde o QR Code aparecer ou reinicie o servidor.</p>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro ao verificar WhatsApp:', error);
+        container.innerHTML = '<p style="color: var(--danger);">Erro ao verificar status do WhatsApp</p>';
     }
 }

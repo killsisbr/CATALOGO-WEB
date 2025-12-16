@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import multer from 'multer';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import WhatsAppService from './whatsapp-service.js';
 import DeliveryService from './services/delivery-service.js';
 import jwt from 'jsonwebtoken';
@@ -42,6 +44,95 @@ app.use(express.json({ limit: '10mb' }));
 
 // Middleware para parsing de formulários
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ============================================================
+// SEGURANÇA
+// ============================================================
+
+// Headers de segurança HTTP
+app.use(helmet({
+  contentSecurityPolicy: false, // Desabilitar CSP para permitir inline scripts
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting para proteção contra ataques de DDoS
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 200, // máximo 200 requisições por IP por janela
+  message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Limiter mais restritivo para criação de pedidos
+const createOrderLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 10, // máximo 10 pedidos por minuto por IP
+  message: { error: 'Limite de pedidos atingido. Aguarde um momento.' }
+});
+
+// Aplicar rate limiting nas rotas de API
+app.use('/api/', apiLimiter);
+app.use('/api/pedidos', createOrderLimiter);
+
+console.log('🛡️ Segurança: Helmet e Rate Limiting ativados');
+
+// ============================================================
+// AUTENTICAÇÃO ADMIN - SISTEMA DE LOGIN
+// ============================================================
+
+// Credenciais do admin (configurar via .env)
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'campestre123';
+
+// Endpoint de login admin
+app.post('/api/admin/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+      const jwtSecret = process.env.JWT_SECRET || 'campestre_secret_2024';
+      const token = jwt.sign(
+        { role: 'admin', user: username },
+        jwtSecret,
+        { expiresIn: '7d' } // Token válido por 7 dias
+      );
+
+      console.log(`✅ Admin login: ${username}`);
+      res.json({ success: true, token });
+    } else {
+      console.log(`❌ Admin login falhou: ${username}`);
+      res.status(401).json({ success: false, error: 'Usuário ou senha incorretos' });
+    }
+  } catch (error) {
+    console.error('Erro no login:', error);
+    res.status(500).json({ success: false, error: 'Erro interno' });
+  }
+});
+
+// Endpoint para verificar token
+app.get('/api/admin/verify', (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.json({ valid: false });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET || 'campestre_secret_2024';
+
+    try {
+      const payload = jwt.verify(token, jwtSecret);
+      res.json({ valid: true, user: payload.user, role: payload.role });
+    } catch (err) {
+      res.json({ valid: false });
+    }
+  } catch (error) {
+    res.json({ valid: false });
+  }
+});
+
+console.log('🔐 Sistema de autenticação admin configurado');
 
 // Endpoint para receber token JWT e setar cookie de sessão, depois redirecionar para /pedido
 app.get('/auth/welcome', (req, res) => {
@@ -1781,35 +1872,6 @@ app.put('/api/pedidos/:id/status', async (req, res) => {
   }
 });
 
-// Helper: recalcular total do pedido baseado nos itens + taxa de entrega
-async function recalcularTotalPedido(pedidoId) {
-  // Somar itens (incluindo adicionais)
-  const itens = await db.all(`SELECT quantidade, preco_unitario, adicionais FROM pedido_itens WHERE pedido_id = ?`, [pedidoId]);
-  let subtotal = 0;
-  for (const it of itens) {
-    const q = Number(it.quantidade || 0);
-    const p = Number(it.preco_unitario || 0);
-    subtotal += q * p;
-    // Somar adicionais se houver
-    if (it.adicionais) {
-      try {
-        const ad = typeof it.adicionais === 'string' ? JSON.parse(it.adicionais) : it.adicionais;
-        if (Array.isArray(ad)) {
-          ad.forEach(a => {
-            const pa = Number((a && (a.preco || a.preco_unitario)) || 0);
-            subtotal += q * pa;
-          });
-        }
-      } catch (_) { /* ignore parse error */ }
-    }
-  }
-  const pedidoAtual = await db.get('SELECT valor_entrega FROM pedidos WHERE id = ?', [pedidoId]);
-  const entrega = pedidoAtual?.valor_entrega || 0;
-  const total = subtotal + (entrega || 0);
-  await db.run('UPDATE pedidos SET total = ? WHERE id = ?', [total, pedidoId]);
-  return total;
-}
-
 // Helper: carregar pedido completo com itens
 async function carregarPedidoCompleto(pedidoId) {
   const pedido = await db.get(
@@ -2498,6 +2560,15 @@ async function startServer() {
     } catch (e) {
       // ignore
     }
+
+    // ============================================================
+    // ÍNDICES PARA OTIMIZAÇÃO DE PERFORMANCE
+    // ============================================================
+    try { await db.run('CREATE INDEX IF NOT EXISTS idx_pedidos_data ON pedidos(data)'); } catch (e) { /* já existe */ }
+    try { await db.run('CREATE INDEX IF NOT EXISTS idx_pedidos_status ON pedidos(status)'); } catch (e) { /* já existe */ }
+    try { await db.run('CREATE INDEX IF NOT EXISTS idx_pedidos_cliente ON pedidos(cliente_telefone)'); } catch (e) { /* já existe */ }
+    try { await db.run('CREATE INDEX IF NOT EXISTS idx_pedido_itens_pedido ON pedido_itens(pedido_id)'); } catch (e) { /* já existe */ }
+    console.log('📊 Índices de banco de dados verificados/criados');
 
     // Verificar se há produtos, se não houver, popular o banco
     const produtosExistentes = await db.get('SELECT COUNT(*) as count FROM produtos');
