@@ -9,7 +9,9 @@ const defaultSettings = {
   pixName: '',
   logo: null,
   theme: 'dark',
-  pickupEnabled: true
+  pickupEnabled: true,
+  backgroundImage: null,
+  backgroundOpacity: 30
 };
 
 // Estado da aplicação
@@ -50,7 +52,7 @@ async function loadSettings() {
       const savedSettings = await response.json();
       customSettings = savedSettings;
     }
-    
+
     // Preencher campos do formulário
     elements.restaurantName.value = customSettings.restaurantName;
     elements.restaurantContact.value = customSettings.contact;
@@ -68,7 +70,7 @@ async function loadSettings() {
     elements.previewRestaurantName.textContent = customSettings.restaurantName;
     const previewHoursEl = document.getElementById('preview-hours');
     if (previewHoursEl) previewHoursEl.textContent = customSettings.hours || '';
-    
+
 
     // logo settings: position/scale
     if (customSettings.logo) {
@@ -80,7 +82,7 @@ async function loadSettings() {
     if (elements.logoZoom) elements.logoZoom.value = customSettings.logoScale || 1;
     if (elements.logoPosX) elements.logoPosX.value = customSettings.logoPosX || 50;
     if (elements.logoPosY) elements.logoPosY.value = customSettings.logoPosY || 50;
-    
+
     // Configuração de Retirada no Balcão
     const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
     if (pickupEnabledCheckbox) {
@@ -91,7 +93,7 @@ async function loadSettings() {
     } else {
       console.warn('⚠️ Checkbox pickup-enabled não encontrado');
     }
-    
+
     // Aplicar cores ao preview
     applyColorsToPreview();
   } catch (error) {
@@ -111,34 +113,41 @@ async function saveSettings() {
     customSettings.pixKey = elements.pixKey.value;
     customSettings.pixName = elements.pixName.value;
     customSettings.theme = elements.themeSelector.value;
-    
+    customSettings.hours = elements.restaurantHours ? elements.restaurantHours.value : (customSettings.hours || '');
+
     // Configuração de Retirada no Balcão
     const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
     if (pickupEnabledCheckbox) {
       customSettings.pickupEnabled = pickupEnabledCheckbox.checked;
     }
-    
-    // Salvar no servidor
-      // include logo positioning/scale before saving
-      customSettings.logoSize = elements.logoSize ? parseInt(elements.logoSize.value) : (customSettings.logoSize || 70);
-      customSettings.logoScale = elements.logoZoom ? parseFloat(elements.logoZoom.value) : (customSettings.logoScale || 1);
-      customSettings.logoPosX = elements.logoPosX ? parseFloat(elements.logoPosX.value) : (customSettings.logoPosX || 50);
-      customSettings.logoPosY = elements.logoPosY ? parseFloat(elements.logoPosY.value) : (customSettings.logoPosY || 50);
 
-      const response = await fetch('/api/custom-settings', {
+    // Configuração de imagem de fundo
+    const backgroundOpacity = document.getElementById('background-opacity');
+    if (backgroundOpacity) {
+      customSettings.backgroundOpacity = parseInt(backgroundOpacity.value) || 30;
+    }
+
+    // Salvar no servidor
+    // include logo positioning/scale before saving
+    customSettings.logoSize = elements.logoSize ? parseInt(elements.logoSize.value) : (customSettings.logoSize || 70);
+    customSettings.logoScale = elements.logoZoom ? parseFloat(elements.logoZoom.value) : (customSettings.logoScale || 1);
+    customSettings.logoPosX = elements.logoPosX ? parseFloat(elements.logoPosX.value) : (customSettings.logoPosX || 50);
+    customSettings.logoPosY = elements.logoPosY ? parseFloat(elements.logoPosY.value) : (customSettings.logoPosY || 50);
+
+    const response = await fetch('/api/custom-settings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(customSettings)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Aplicar cores ao preview
       applyColorsToPreview();
-      
+
       // Mostrar notificação de sucesso
       showNotification('Configurações salvas com sucesso!');
     } else {
@@ -155,21 +164,21 @@ async function resetToDefault() {
   if (!confirm('Tem certeza que deseja restaurar as configurações padrão? Esta ação não pode ser desfeita.')) {
     return;
   }
-  
+
   try {
     const response = await fetch('/api/custom-settings/reset', {
       method: 'POST'
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Atualizar estado local
       customSettings = { ...defaultSettings };
-      
+
       // Recarregar configurações
       await loadSettings();
-      
+
       showNotification('Configurações restauradas para o padrão!');
     } else {
       showNotification('Erro ao restaurar configurações: ' + result.error, 'error');
@@ -188,19 +197,19 @@ function applyColorsToPreview() {
   customSettings.secondaryColor = elements.secondaryColor.value;
   customSettings.backgroundColor = elements.backgroundColor.value;
   customSettings.hours = elements.restaurantHours.value;
-  
+
   const previewContainer = document.getElementById('preview-container');
   if (previewContainer) {
     previewContainer.style.setProperty('--preview-primary', customSettings.primaryColor);
     previewContainer.style.setProperty('--preview-secondary', customSettings.secondaryColor);
     previewContainer.style.setProperty('--preview-background', customSettings.backgroundColor);
   }
-  
+
   // Atualizar nome do restaurante no preview
   if (elements.previewRestaurantName) {
     elements.previewRestaurantName.textContent = customSettings.restaurantName || 'Nome do Restaurante';
   }
-  
+
   // Atualizar background do header do preview
   const previewHeader = document.querySelector('.preview-header');
   if (previewHeader) {
@@ -227,7 +236,7 @@ function showNotification(message, type = 'success') {
     z-index: 1001;
     animation: fadeInOut 3s ease;
   `;
-  
+
   // Adicionar animação
   const style = document.createElement('style');
   style.textContent = `
@@ -239,9 +248,9 @@ function showNotification(message, type = 'success') {
     }
   `;
   document.head.appendChild(style);
-  
+
   document.body.appendChild(notification);
-  
+
   // Remover notificação após 3 segundos
   setTimeout(() => {
     notification.remove();
@@ -254,28 +263,28 @@ function setupColorPickers() {
   elements.primaryColor.addEventListener('input', () => {
     elements.primaryColorValue.value = elements.primaryColor.value;
   });
-  
+
   elements.secondaryColor.addEventListener('input', () => {
     elements.secondaryColorValue.value = elements.secondaryColor.value;
   });
-  
+
   elements.backgroundColor.addEventListener('input', () => {
     elements.backgroundColorValue.value = elements.backgroundColor.value;
   });
-  
+
   // Atualizar picker quando o valor textual muda
   elements.primaryColorValue.addEventListener('input', () => {
     if (/^#[0-9A-F]{6}$/i.test(elements.primaryColorValue.value)) {
       elements.primaryColor.value = elements.primaryColorValue.value;
     }
   });
-  
+
   elements.secondaryColorValue.addEventListener('input', () => {
     if (/^#[0-9A-F]{6}$/i.test(elements.secondaryColorValue.value)) {
       elements.secondaryColor.value = elements.secondaryColorValue.value;
     }
   });
-  
+
   elements.backgroundColorValue.addEventListener('input', () => {
     if (/^#[0-9A-F]{6}$/i.test(elements.backgroundColorValue.value)) {
       elements.backgroundColor.value = elements.backgroundColorValue.value;
@@ -293,31 +302,31 @@ function compressImage(file, maxWidth = 800, maxHeight = 400, quality = 0.8) {
         // Calcular novas dimensões mantendo aspect ratio
         let width = img.width;
         let height = img.height;
-        
+
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
-        
+
         if (height > maxHeight) {
           width = (width * maxHeight) / height;
           height = maxHeight;
         }
-        
+
         // Criar canvas e comprimir
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        
+
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Converter para base64 comprimido
         const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-        
+
         console.log('📊 Tamanho original:', (event.target.result.length / 1024).toFixed(2), 'KB');
         console.log('📊 Tamanho comprimido:', (compressedBase64.length / 1024).toFixed(2), 'KB');
-        
+
         resolve(compressedBase64);
       };
       img.onerror = reject;
@@ -339,23 +348,23 @@ function setupLogoPreview() {
           showNotification('Por favor, selecione apenas arquivos de imagem!', 'error');
           return;
         }
-        
+
         // Verificar tamanho (máximo 5MB antes da compressão)
         if (file.size > 5 * 1024 * 1024) {
           showNotification('Imagem muito grande! Tamanho máximo: 5MB', 'error');
           return;
         }
-        
+
         // Mostrar loading
         elements.logoPreview.innerHTML = '<p style="color: #27ae60;"><i class="fas fa-spinner fa-spin"></i> Processando imagem...</p>';
-        
+
         // Comprimir imagem
         const compressedImage = await compressImage(file);
-        
+
         // Mostrar preview
         customSettings.logo = compressedImage;
         renderLogoPreview(compressedImage);
-        
+
         showNotification('Logo carregada e otimizada com sucesso!');
       } catch (error) {
         console.error('Erro ao processar imagem:', error);
@@ -428,12 +437,115 @@ function initLogoControls(img) {
   }
 }
 
+// Configurar preview da imagem de fundo
+function setupBackgroundPreview() {
+  const backgroundUpload = document.getElementById('background-upload');
+  const backgroundPreviewContainer = document.getElementById('background-preview-container');
+  const backgroundPreviewImg = document.getElementById('background-preview-img');
+  const backgroundPlaceholder = document.getElementById('background-placeholder');
+  const removeBackgroundBtn = document.getElementById('remove-background-btn');
+  const backgroundOpacity = document.getElementById('background-opacity');
+  const backgroundOpacityValue = document.getElementById('background-opacity-value');
+  const backgroundOpacityControl = document.getElementById('background-opacity-control');
+
+  if (!backgroundUpload) {
+    console.log('❌ backgroundUpload não encontrado');
+    return;
+  }
+
+  console.log('✅ setupBackgroundPreview inicializado - backgroundUpload encontrado');
+
+  backgroundUpload.addEventListener('change', async (e) => {
+    console.log('📷 Evento change disparado no background-upload');
+    const file = e.target.files[0];
+    if (file) {
+      console.log('📷 Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+      try {
+        if (!file.type.startsWith('image/')) {
+          showNotification('Por favor, selecione apenas arquivos de imagem!', 'error');
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          showNotification('Imagem muito grande! Tamanho máximo: 5MB', 'error');
+          return;
+        }
+
+        console.log('📷 Comprimindo imagem...');
+        // Comprimir imagem com resolução maior para fundo
+        const compressedImage = await compressImage(file, 1200, 800, 0.7);
+        console.log('📷 Imagem comprimida, tamanho base64:', compressedImage.length);
+
+        customSettings.backgroundImage = compressedImage;
+        backgroundPreviewImg.src = compressedImage;
+        backgroundPreviewContainer.style.display = 'block';
+        backgroundPlaceholder.style.display = 'none';
+        if (backgroundOpacityControl) backgroundOpacityControl.style.display = 'block';
+
+        showNotification('Imagem de fundo carregada com sucesso!');
+        console.log('✅ Imagem de fundo carregada e preview atualizado');
+      } catch (error) {
+        console.error('Erro ao processar imagem de fundo:', error);
+        showNotification('Erro ao processar imagem!', 'error');
+      }
+    } else {
+      console.log('❌ Nenhum arquivo selecionado');
+    }
+  });
+
+  if (removeBackgroundBtn) {
+    removeBackgroundBtn.addEventListener('click', () => {
+      customSettings.backgroundImage = null;
+      backgroundPreviewImg.src = '';
+      backgroundPreviewContainer.style.display = 'none';
+      backgroundPlaceholder.style.display = 'block';
+      if (backgroundOpacityControl) backgroundOpacityControl.style.display = 'none';
+      backgroundUpload.value = '';
+      showNotification('Imagem de fundo removida!');
+    });
+  }
+
+  if (backgroundOpacity) {
+    backgroundOpacity.addEventListener('input', () => {
+      const opacity = parseInt(backgroundOpacity.value);
+      customSettings.backgroundOpacity = opacity;
+      if (backgroundOpacityValue) backgroundOpacityValue.textContent = opacity + '%';
+    });
+  }
+}
+
+// Carregar estado da imagem de fundo
+function loadBackgroundSettings() {
+  const backgroundPreviewContainer = document.getElementById('background-preview-container');
+  const backgroundPreviewImg = document.getElementById('background-preview-img');
+  const backgroundPlaceholder = document.getElementById('background-placeholder');
+  const backgroundOpacity = document.getElementById('background-opacity');
+  const backgroundOpacityValue = document.getElementById('background-opacity-value');
+  const backgroundOpacityControl = document.getElementById('background-opacity-control');
+
+  if (customSettings.backgroundImage) {
+    if (backgroundPreviewImg) backgroundPreviewImg.src = customSettings.backgroundImage;
+    if (backgroundPreviewContainer) backgroundPreviewContainer.style.display = 'block';
+    if (backgroundPlaceholder) backgroundPlaceholder.style.display = 'none';
+    if (backgroundOpacityControl) backgroundOpacityControl.style.display = 'block';
+  }
+
+  if (backgroundOpacity) {
+    backgroundOpacity.value = customSettings.backgroundOpacity || 30;
+    if (backgroundOpacityValue) backgroundOpacityValue.textContent = (customSettings.backgroundOpacity || 30) + '%';
+  }
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   setupColorPickers();
   setupLogoPreview();
-  
+  setupBackgroundPreview();
+
+  // Carregar preview da imagem de fundo após carregar settings
+  setTimeout(loadBackgroundSettings, 100);
+
   // Adicionar evento para o botão de voltar
   const backToAdminBtn = document.getElementById('back-to-admin');
   if (backToAdminBtn) {

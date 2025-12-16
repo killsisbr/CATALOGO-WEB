@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão - Restaurante</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #27ae60;
+            --primary-dark: #1e8449;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #3498db;
+            --success: #2ecc71;
+            --purple: #9b59b6;
+            --dark: #0a0a0a;
+            --card: #141414;
+            --card-hover: #1a1a1a;
+            --border: #2d2d2d;
+            --text: #ffffff;
+            --text-muted: #888888;
+            --radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--card), #1a1a1a);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-area img {
+            height: 40px;
+            width: auto;
+            border-radius: 8px;
+        }
+
+        .logo-area h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-indicator.online {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .status-indicator.offline {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online .status-dot {
+            background: var(--success);
+        }
+
+        .status-indicator.offline .status-dot {
+            background: var(--danger);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .header-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .header-btn:hover {
+            background: var(--card-hover);
+            border-color: var(--primary);
+        }
+
+        .header-btn.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .header-btn.primary:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px 25px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a1a, #222);
+            border-radius: var(--radius);
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .stat-icon.pending {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--warning);
+        }
+
+        .stat-icon.preparing {
+            background: rgba(52, 152, 219, 0.15);
+            color: var(--info);
+        }
+
+        .stat-icon.ready {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+        }
+
+        .stat-icon.total {
+            background: rgba(155, 89, 182, 0.15);
+            color: var(--purple);
+        }
+
+        .stat-info h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            height: calc(100vh - 180px);
+        }
+
+        /* Orders Board */
+        .orders-board {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .order-column {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+
+        .column-header {
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .column-title i {
+            font-size: 1.1rem;
+        }
+
+        .column-title.pending i {
+            color: var(--warning);
+        }
+
+        .column-title.preparing i {
+            color: var(--info);
+        }
+
+        .column-title.ready i {
+            color: var(--success);
+        }
+
+        .column-title.delivered i {
+            color: var(--purple);
+        }
+
+        .column-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .column-orders {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Order Card */
+        .order-card {
+            background: linear-gradient(135deg, #1a1a1a, #222);
+            border-radius: var(--radius);
+            padding: 15px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .order-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .order-card.blacklisted {
+            border: 3px solid var(--danger) !important;
+            animation: danger-pulse 1.5s infinite;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.05)) !important;
+            position: relative;
+        }
+
+        /* Ícone circular de ! no canto do card */
+        .order-card.blacklisted::before {
+            content: '!';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 28px;
+            height: 28px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: white;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6);
+            z-index: 10;
+            animation: bounce-alert 1s infinite;
+        }
+
+        @keyframes bounce-alert {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        @keyframes danger-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(231, 76, 60, 0.9);
+            }
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .order-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        .order-time {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .blacklist-badge {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+        }
+
+        .blacklist-badge i {
+            font-size: 0.85rem;
+        }
+
+        .order-customer {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .order-items-count {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .order-action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+
+        .order-action-btn.advance {
+            background: var(--primary);
+            color: white;
+        }
+
+        .order-action-btn.advance:hover {
+            background: var(--primary-dark);
+        }
+
+        .order-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .order-action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #1a1a1a, var(--card));
+        }
+
+        .modal-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Order Detail */
+        .detail-section {
+            margin-bottom: 20px;
+        }
+
+        .detail-section h3 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-section h3 i {
+            color: var(--primary);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-item label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .detail-item span {
+            font-weight: 500;
+        }
+
+        .items-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: 500;
+        }
+
+        .item-qty {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .total-row span:first-child {
+            font-weight: 600;
+        }
+
+        .total-row span:last-child {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .action-buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-action-btn {
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .modal-action-btn.print {
+            background: var(--info);
+            color: white;
+        }
+
+        .modal-action-btn.advance {
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-action-btn.back {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .modal-action-btn.danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+        }
+
+        .modal-action-btn.danger:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: scale(1.02);
+        }
+
+        .modal-action-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        /* Settings Panel */
+        .settings-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .settings-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .settings-section h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-section h3 i {
+            color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info h4 {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .toggle-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--border);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked+.toggle-slider {
+            background: var(--primary);
+        }
+
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .orders-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .orders-board {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-area">
+                <img id="logo-img" src="" alt="Logo" style="display: none;">
+                <h1 id="restaurant-name">Painel de Gestão</h1>
+            </div>
+        </div>
+        <div class="header-right">
+            <div id="robot-status" class="status-indicator offline">
+                <span class="status-dot"></span>
+                <span id="robot-status-text">Robô Desligado</span>
+            </div>
+            <button id="toggle-robot-btn" class="header-btn">
+                <i class="fas fa-robot"></i> Robô
+            </button>
+            <button id="auto-print-btn" class="header-btn">
+                <i class="fas fa-print"></i> Auto-Print: OFF
+            </button>
+            <button id="settings-btn" class="header-btn">
+                <i class="fas fa-cog"></i> Configurações
+            </button>
+            <button id="refresh-btn" class="header-btn primary">
+                <i class="fas fa-sync-alt"></i> Atualizar
+            </button>
+        </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-icon pending">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="stat-pending">0</h3>
+                <p>Pendentes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon preparing">
+                <i class="fas fa-fire"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="stat-preparing">0</h3>
+                <p>Preparando</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon ready">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="stat-ready">0</h3>
+                <p>Prontos</p>
+            </div>
+        </div>
+        <div class="stat-card" onclick="openModal('delivery-stats-modal')" style="cursor: pointer;"
+            title="Clique para ver estatísticas detalhadas">
+            <div class="stat-icon total">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="stat-total">R$ 0</h3>
+                <p>Total Hoje <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin-left: 5px;"></i></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="orders-board">
+            <!-- Pendentes -->
+            <div class="order-column">
+                <div class="column-header">
+                    <div class="column-title pending">
+                        <i class="fas fa-clock"></i> Pendentes
+                    </div>
+                    <span class="column-count" id="count-pending">0</span>
+                </div>
+                <div class="column-orders" id="orders-pending"></div>
+            </div>
+
+            <!-- Preparando -->
+            <div class="order-column">
+                <div class="column-header">
+                    <div class="column-title preparing">
+                        <i class="fas fa-fire"></i> Preparando
+                    </div>
+                    <span class="column-count" id="count-preparing">0</span>
+                </div>
+                <div class="column-orders" id="orders-preparing"></div>
+            </div>
+
+            <!-- Prontos -->
+            <div class="order-column">
+                <div class="column-header">
+                    <div class="column-title ready">
+                        <i class="fas fa-check-circle"></i> Prontos
+                    </div>
+                    <span class="column-count" id="count-ready">0</span>
+                </div>
+                <div class="column-orders" id="orders-ready"></div>
+            </div>
+
+            <!-- Entregues -->
+            <div class="order-column">
+                <div class="column-header">
+                    <div class="column-title delivered">
+                        <i class="fas fa-truck"></i> Entregues
+                    </div>
+                    <span class="column-count" id="count-delivered">0</span>
+                </div>
+                <div class="column-orders" id="orders-delivered"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Order Detail Modal -->
+    <div id="order-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-receipt"></i> <span id="modal-order-title">Pedido #</span></h2>
+                <button class="modal-close" onclick="closeModal('order-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="blacklist-alert"
+                    style="display: none; background: var(--danger); color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; align-items: center; gap: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>ATENÇÃO: Cliente na lista de golpistas!</strong>
+                </div>
+
+                <!-- Tipo de Entrega Badge -->
+                <div id="delivery-type-badge" style="margin-bottom: 15px; display: flex; gap: 10px;">
+                    <span id="badge-delivery"
+                        style="background: var(--info); color: white; padding: 8px 15px; border-radius: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-motorcycle"></i> ENTREGA
+                    </span>
+                </div>
+
+                <div class="detail-section">
+                    <h3><i class="fas fa-user"></i> Cliente</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Nome</label>
+                            <span id="modal-customer-name">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>WhatsApp</label>
+                            <span id="modal-customer-phone">
+                                <a id="whatsapp-link" href="#" target="_blank"
+                                    style="color: #25D366; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fab fa-whatsapp"></i> <span id="whatsapp-number">-</span>
+                                </a>
+                            </span>
+                        </div>
+                        <div class="detail-item" style="grid-column: span 2;">
+                            <label>Endereço</label>
+                            <span id="modal-customer-address">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3><i class="fas fa-credit-card"></i> Pagamento</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Forma de Pagamento</label>
+                            <span id="modal-payment">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Data/Hora</label>
+                            <span id="modal-datetime">-</span>
+                        </div>
+                        <div class="detail-item" id="troco-container">
+                            <label>Troco para</label>
+                            <span id="modal-troco">-</span>
+                        </div>
+                        <div class="detail-item" id="observacao-container">
+                            <label>Observação</label>
+                            <span id="modal-observacao">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3><i class="fas fa-list"></i> Itens do Pedido</h3>
+                    <div class="items-list" id="modal-items-list"></div>
+
+                    <!-- Detalhes de Valores -->
+                    <div
+                        style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; margin-top: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            <span style="color: var(--text-muted);">Subtotal</span>
+                            <span id="modal-subtotal">R$ 0,00</span>
+                        </div>
+                        <div id="taxa-row"
+                            style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            <span style="color: var(--text-muted);">Taxa de Entrega</span>
+                            <span id="modal-taxa" style="color: var(--warning);">R$ 0,00</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700; font-size: 1.2rem;">
+                            <span>TOTAL</span>
+                            <span id="modal-total" style="color: var(--success);">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons-grid">
+                    <button class="modal-action-btn print" onclick="printOrder()">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <button class="modal-action-btn advance" id="btn-advance" onclick="advanceStatus()">
+                        <i class="fas fa-arrow-right"></i> Avançar Status
+                    </button>
+                    <a id="whatsapp-action-btn" href="#" target="_blank" class="modal-action-btn"
+                        style="background: #25D366; color: white; text-decoration: none;">
+                        <i class="fab fa-whatsapp"></i> Conversar
+                    </a>
+                    <button class="modal-action-btn danger" onclick="markAsScammer()">
+                        <i class="fas fa-ban"></i> Marcar Golpista
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Configurações</h2>
+                <button class="modal-close" onclick="closeModal('settings-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-grid">
+                    <div class="settings-section">
+                        <h3><i class="fas fa-store"></i> Restaurante</h3>
+                        <div class="input-group">
+                            <label>Nome do Restaurante</label>
+                            <input type="text" id="setting-name" placeholder="Nome do restaurante">
+                        </div>
+                        <div class="input-group">
+                            <label>Horário de Funcionamento</label>
+                            <input type="text" id="setting-hours" placeholder="Ex: 18:00 às 23:00">
+                        </div>
+                        <div class="input-group">
+                            <label>Telefone de Contato</label>
+                            <input type="text" id="setting-phone" placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3><i class="fas fa-credit-card"></i> PIX</h3>
+                        <div class="input-group">
+                            <label>Chave PIX</label>
+                            <input type="text" id="setting-pix" placeholder="Sua chave PIX">
+                        </div>
+                        <div class="input-group">
+                            <label>Nome do Titular</label>
+                            <input type="text" id="setting-pix-name" placeholder="Nome para PIX">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3><i class="fas fa-toggle-on"></i> Funcionalidades</h3>
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>Retirada no Balcão</h4>
+                                <p>Permitir clientes retirarem no local</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="setting-pickup" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>Auto-Print</h4>
+                                <p>Imprimir automaticamente novos pedidos</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="setting-autoprint">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-action-btn back" onclick="closeModal('settings-modal')">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="modal-action-btn advance" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Estatísticas de Entregas -->
+    <div id="delivery-stats-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-line"></i> Estatísticas de Faturamento</h2>
+                <button class="modal-close" onclick="closeModal('delivery-stats-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; gap: 15px;">
+                    <!-- Hoje -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.05)); border: 1px solid rgba(46, 204, 113, 0.3); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 45px; height: 45px; background: rgba(46, 204, 113, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-calendar-day"
+                                        style="color: var(--success); font-size: 1.2rem;"></i>
+                                </div>
+                                <span style="font-weight: 600; font-size: 1.1rem;">Hoje</span>
+                            </div>
+                            <span id="delivery-stat-today"
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--success);">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Semana -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(52, 152, 219, 0.05)); border: 1px solid rgba(52, 152, 219, 0.3); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 45px; height: 45px; background: rgba(52, 152, 219, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-calendar-week" style="color: var(--info); font-size: 1.2rem;"></i>
+                                </div>
+                                <span style="font-weight: 600; font-size: 1.1rem;">Esta Semana</span>
+                            </div>
+                            <span id="delivery-stat-week"
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--info);">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Mês -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(155, 89, 182, 0.15), rgba(155, 89, 182, 0.05)); border: 1px solid rgba(155, 89, 182, 0.3); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 45px; height: 45px; background: rgba(155, 89, 182, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-calendar-alt" style="color: var(--purple); font-size: 1.2rem;"></i>
+                                </div>
+                                <span style="font-weight: 600; font-size: 1.1rem;">Este Mês</span>
+                            </div>
+                            <span id="delivery-stat-month"
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--purple);">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Geral -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(243, 156, 18, 0.05)); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 45px; height: 45px; background: rgba(243, 156, 18, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-coins" style="color: var(--warning); font-size: 1.2rem;"></i>
+                                </div>
+                                <span style="font-weight: 600; font-size: 1.1rem;">Total Geral</span>
+                            </div>
+                            <span id="delivery-stat-total"
+                                style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Separador -->
+                <div style="margin: 25px 0; border-top: 1px solid var(--border); position: relative;">
+                    <span
+                        style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--card); padding: 0 15px; color: var(--text-muted); font-size: 0.85rem;">
+                        <i class="fas fa-motorcycle"></i> TAXA MOTOBOY
+                    </span>
+                </div>
+
+                <!-- Taxas de Entrega para pagamento do Motoboy -->
+                <div style="display: grid; gap: 12px;">
+                    <!-- Taxa Hoje -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.05)); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-motorcycle" style="color: var(--danger); font-size: 1rem;"></i>
+                                <span style="font-weight: 500;">Taxa Hoje</span>
+                            </div>
+                            <span id="fee-stat-today"
+                                style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Taxa Semana -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.02)); border: 1px solid rgba(231, 76, 60, 0.2); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-calendar-week" style="color: var(--danger); font-size: 1rem;"></i>
+                                <span style="font-weight: 500;">Taxa Semana</span>
+                            </div>
+                            <span id="fee-stat-week"
+                                style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Taxa Mês -->
+                    <div
+                        style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.02)); border: 1px solid rgba(231, 76, 60, 0.2); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-calendar-alt" style="color: var(--danger); font-size: 1rem;"></i>
+                                <span style="font-weight: 500;">Taxa Mês</span>
+                            </div>
+                            <span id="fee-stat-month"
+                                style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">
+                        <i class="fas fa-info-circle"></i> Valores calculados a partir dos pedidos finalizados
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-action-btn back" onclick="closeModal('delivery-stats-modal')">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Item ao Pedido -->
+    <div id="add-item-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle" style="color: var(--success);"></i> Adicionar Item</h2>
+                <button class="modal-close" onclick="closeModal('add-item-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; gap: 20px;">
+                    <!-- Produto -->
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-muted);">
+                            <i class="fas fa-hamburger"></i> Produto
+                        </label>
+                        <select id="add-item-produto"
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #1a1a2e; color: #fff; font-size: 1rem; cursor: pointer;">
+                            <option value="" style="background: #1a1a2e; color: #fff;">Selecione um produto...</option>
+                        </select>
+                        <style>
+                            #add-item-produto option,
+                            #add-item-produto optgroup {
+                                background: #1a1a2e;
+                                color: #fff;
+                                padding: 10px;
+                            }
+
+                            #add-item-produto optgroup {
+                                font-weight: bold;
+                                color: #f39c12;
+                            }
+
+                            #add-item-produto option:hover,
+                            #add-item-produto option:focus {
+                                background: #3498db;
+                            }
+                        </style>
+                    </div>
+
+                    <!-- Quantidade -->
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-muted);">
+                            <i class="fas fa-sort-numeric-up"></i> Quantidade
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button
+                                onclick="document.getElementById('add-item-quantidade').value = Math.max(1, parseInt(document.getElementById('add-item-quantidade').value) - 1)"
+                                style="width: 45px; height: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.2rem; cursor: pointer;">
+                                -
+                            </button>
+                            <input type="number" id="add-item-quantidade" value="1" min="1" max="99"
+                                style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); text-align: center; font-size: 1.2rem; font-weight: 700;">
+                            <button
+                                onclick="document.getElementById('add-item-quantidade').value = Math.min(99, parseInt(document.getElementById('add-item-quantidade').value) + 1)"
+                                style="width: 45px; height: 45px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.2rem; cursor: pointer;">
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Observação -->
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-muted);">
+                            <i class="fas fa-comment"></i> Observação (opcional)
+                        </label>
+                        <input type="text" id="add-item-observacao" placeholder="Ex: Sem cebola, bem passado..."
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button class="modal-action-btn back" onclick="closeModal('add-item-modal')" style="flex: 1;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="modal-action-btn advance" onclick="confirmarAdicionarItem()" style="flex: 2;">
+                    <i class="fas fa-check"></i> Adicionar ao Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Quantidade -->
+    <div id="edit-quantity-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 380px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit" style="color: var(--info);"></i> Alterar Quantidade</h2>
+                <button class="modal-close" onclick="closeModal('edit-quantity-modal')">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    Quantidade atual: <strong id="edit-qty-atual" style="color: var(--text);">1</strong>
+                </p>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 25px 0;">
+                    <button
+                        onclick="document.getElementById('edit-qty-nova').value = Math.max(1, parseInt(document.getElementById('edit-qty-nova').value || 1) - 1)"
+                        style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--danger); background: transparent; color: var(--danger); font-size: 1.5rem; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <input type="number" id="edit-qty-nova" value="1" min="1" max="99"
+                        style="width: 80px; padding: 15px; border-radius: 12px; border: 2px solid var(--primary); background: var(--bg); color: var(--text); text-align: center; font-size: 1.8rem; font-weight: 700;">
+                    <button
+                        onclick="document.getElementById('edit-qty-nova').value = Math.min(99, parseInt(document.getElementById('edit-qty-nova').value || 1) + 1)"
+                        style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--success); background: transparent; color: var(--success); font-size: 1.5rem; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button class="modal-action-btn back" onclick="closeModal('edit-quantity-modal')" style="flex: 1;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="modal-action-btn advance" onclick="confirmarAlteracaoQuantidade()" style="flex: 2;">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Remoção -->
+    <div id="confirm-remove-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 380px;">
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.1));">
+                <h2><i class="fas fa-trash-alt" style="color: var(--danger);"></i> Remover Item</h2>
+                <button class="modal-close" onclick="closeModal('confirm-remove-modal')">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div
+                    style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(231, 76, 60, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--danger);"></i>
+                </div>
+                <h3 style="margin-bottom: 10px;">Confirmar Remoção</h3>
+                <p style="color: var(--text-muted);">
+                    Deseja realmente remover este item do pedido?<br>
+                    <small>Esta ação não pode ser desfeita.</small>
+                </p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button class="modal-action-btn back" onclick="closeModal('confirm-remove-modal')" style="flex: 1;">
+                    <i class="fas fa-arrow-left"></i> Não, Voltar
+                </button>
+                <button class="modal-action-btn danger" onclick="confirmarRemoverItem()" style="flex: 2;">
+                    <i class="fas fa-trash"></i> Sim, Remover
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="quadro.js"></script>
+</body>
+
+</html>

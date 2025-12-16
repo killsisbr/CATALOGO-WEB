@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +24,7 @@
       --text: #ffffff;
       --text-muted: #888;
       --radius: 12px;
-      --shadow: 0 4px 20px rgba(0,0,0,0.3);
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
     body {
@@ -44,6 +45,7 @@
       .app-layout {
         grid-template-columns: 1fr;
       }
+
       .preview-panel {
         display: none;
       }
@@ -138,8 +140,15 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Cards de Configuração */
@@ -272,22 +281,32 @@
       left: 0;
       opacity: 0;
       cursor: pointer;
+      z-index: 10;
     }
 
     .logo-upload-icon {
       font-size: 3rem;
       color: var(--text-muted);
       margin-bottom: 15px;
+      pointer-events: none;
     }
 
     .logo-upload-text {
       color: var(--text-muted);
       font-size: 0.95rem;
+      pointer-events: none;
     }
 
     .logo-upload-text span {
       color: var(--primary);
       font-weight: 600;
+      pointer-events: none;
+    }
+
+    /* Garantir que placeholder não bloqueie input */
+    #logo-placeholder,
+    #background-placeholder {
+      pointer-events: none;
     }
 
     #logo-preview-img {
@@ -560,7 +579,7 @@
       padding: 16px 28px;
       border-radius: var(--radius);
       font-weight: 500;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       z-index: 1000;
       animation: slideUp 0.3s ease;
     }
@@ -570,8 +589,15 @@
     }
 
     @keyframes slideUp {
-      from { transform: translate(-50%, 20px); opacity: 0; }
-      to { transform: translate(-50%, 0); opacity: 1; }
+      from {
+        transform: translate(-50%, 20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
     }
 
     /* Remover logo button */
@@ -658,18 +684,19 @@
       background-color: white;
       transition: 0.3s;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
-    .toggle-switch-custom input:checked + .toggle-slider-custom {
+    .toggle-switch-custom input:checked+.toggle-slider-custom {
       background-color: var(--primary);
     }
 
-    .toggle-switch-custom input:checked + .toggle-slider-custom:before {
+    .toggle-switch-custom input:checked+.toggle-slider-custom:before {
       transform: translateX(24px);
     }
   </style>
 </head>
+
 <body>
   <div class="app-layout">
     <!-- Painel de Configurações -->
@@ -701,26 +728,38 @@
       <div class="config-section active" id="section-geral">
         <div class="config-card">
           <h3><i class="fas fa-info-circle"></i> Informações do Restaurante</h3>
-          
+
           <div class="form-row">
             <label class="form-label">Nome do Restaurante</label>
             <input type="text" id="restaurant-name" class="form-input" placeholder="Ex: Brutus Burger">
           </div>
-          
+
           <div class="form-row">
             <label class="form-label">Telefone/WhatsApp</label>
             <input type="text" id="restaurant-contact" class="form-input" placeholder="(42) 99999-9999">
           </div>
-          
+
           <div class="form-row">
             <label class="form-label">Horário de Funcionamento</label>
-            <input type="text" id="restaurant-hours" class="form-input" placeholder="18:00 às 23:00">
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div style="flex: 1;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Abre
+                  às</label>
+                <input type="time" id="open-time" class="form-input" value="18:00">
+              </div>
+              <span style="color: var(--text-muted); padding-top: 20px;">até</span>
+              <div style="flex: 1;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Fecha
+                  às</label>
+                <input type="time" id="close-time" class="form-input" value="23:00">
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="config-card">
           <h3><i class="fas fa-image"></i> Logo do Restaurante</h3>
-          
+
           <div class="logo-upload-area" id="logo-upload-area">
             <input type="file" id="logo-upload" accept="image/*">
             <div id="logo-placeholder">
@@ -751,7 +790,7 @@
       <div class="config-section" id="section-aparencia">
         <div class="config-card">
           <h3><i class="fas fa-swatchbook"></i> Cores do Tema</h3>
-          
+
           <div class="color-row">
             <div class="color-preview" id="primary-preview">
               <input type="color" id="primary-color" value="#27ae60">
@@ -792,18 +831,50 @@
             </select>
           </div>
         </div>
+
+        <div class="config-card">
+          <h3><i class="fas fa-image"></i> Imagem de Fundo</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+            Adicione uma imagem de fundo para a página de pedidos. A imagem aparecerá como tema do seu cardápio.
+          </p>
+
+          <div class="logo-upload-area" id="background-upload-area">
+            <input type="file" id="background-upload" accept="image/*">
+            <div id="background-placeholder">
+              <div class="logo-upload-icon"><i class="fas fa-panorama"></i></div>
+              <div class="logo-upload-text">
+                Arraste uma imagem ou <span>clique para selecionar</span>
+              </div>
+            </div>
+            <div id="background-preview-container" style="display:none; position:relative;">
+              <img id="background-preview-img" src="" alt="Imagem de Fundo"
+                style="max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px;">
+              <button type="button" class="remove-logo-btn" id="remove-background-btn" title="Remover imagem de fundo">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="logo-size-control" id="background-opacity-control" style="display:none; margin-top: 20px;">
+            <div class="size-slider-row">
+              <label>Opacidade</label>
+              <input type="range" id="background-opacity" min="10" max="100" value="30">
+              <span class="size-value" id="background-opacity-value">30%</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Seção Pagamento -->
       <div class="config-section" id="section-pagamento">
         <div class="config-card">
           <h3><i class="fab fa-pix"></i> Configurações PIX</h3>
-          
+
           <div class="form-row">
             <label class="form-label">Chave PIX</label>
             <input type="text" id="pix-key" class="form-input" placeholder="CPF, telefone, e-mail ou chave aleatória">
           </div>
-          
+
           <div class="form-row">
             <label class="form-label">Nome do Titular</label>
             <input type="text" id="pix-name" class="form-input" placeholder="Nome conforme cadastrado no banco">
@@ -815,7 +886,7 @@
       <div class="config-section" id="section-entrega">
         <div class="config-card">
           <h3><i class="fas fa-store"></i> Retirada no Balcão</h3>
-          
+
           <div class="form-row">
             <div class="toggle-row">
               <label class="toggle-switch-custom">
@@ -824,7 +895,8 @@
               </label>
               <div class="toggle-info">
                 <span class="toggle-label">Permitir Retirada no Balcão</span>
-                <span class="toggle-description">Quando ativado, o cliente pode optar por retirar o pedido diretamente no estabelecimento, sem taxa de entrega.</span>
+                <span class="toggle-description">Quando ativado, o cliente pode optar por retirar o pedido diretamente
+                  no estabelecimento, sem taxa de entrega.</span>
               </div>
             </div>
           </div>
@@ -899,14 +971,17 @@
       logo: null,
       logoSize: 50,
       theme: 'dark',
-      pickupEnabled: true
+      pickupEnabled: true,
+      openTime: '18:00',
+      closeTime: '23:00'
     };
 
     // Elementos
     const els = {
       restaurantName: document.getElementById('restaurant-name'),
       contact: document.getElementById('restaurant-contact'),
-      hours: document.getElementById('restaurant-hours'),
+      openTime: document.getElementById('open-time'),
+      closeTime: document.getElementById('close-time'),
       primaryColor: document.getElementById('primary-color'),
       secondaryColor: document.getElementById('secondary-color'),
       backgroundColor: document.getElementById('background-color'),
@@ -917,7 +992,8 @@
       logoSizeValue: document.getElementById('logo-size-value'),
       themeSelector: document.getElementById('theme-selector'),
       saveBtn: document.getElementById('save-settings'),
-      resetBtn: document.getElementById('reset-settings')
+      resetBtn: document.getElementById('reset-settings'),
+      backgroundUpload: document.getElementById('background-upload')
     };
 
     // Inicialização
@@ -926,6 +1002,7 @@
       setupTabs();
       setupColorPickers();
       setupLogoUpload();
+      setupBackgroundUpload();
       setupSizeSlider();
       setupRealtimePreview();
       setupActions();
@@ -946,7 +1023,8 @@
       // Preencher campos
       els.restaurantName.value = settings.restaurantName || '';
       els.contact.value = settings.contact || '';
-      els.hours.value = settings.hours || '';
+      els.openTime.value = settings.openTime || '18:00';
+      els.closeTime.value = settings.closeTime || '23:00';
       els.primaryColor.value = settings.primaryColor;
       els.secondaryColor.value = settings.secondaryColor;
       els.backgroundColor.value = settings.backgroundColor;
@@ -1051,6 +1129,81 @@
       });
     }
 
+    // Background Upload
+    function setupBackgroundUpload() {
+      if (!els.backgroundUpload) {
+        console.log('❌ backgroundUpload não encontrado');
+        return;
+      }
+      console.log('✅ setupBackgroundUpload inicializado');
+
+      els.backgroundUpload.addEventListener('change', async (e) => {
+        console.log('📷 Evento change disparado no background-upload');
+        const file = e.target.files[0];
+        if (!file) {
+          console.log('❌ Nenhum arquivo selecionado');
+          return;
+        }
+
+        console.log('📷 Arquivo selecionado:', file.name, 'Tipo:', file.type);
+
+        if (!file.type.startsWith('image/')) {
+          notify('Selecione um arquivo de imagem', 'error');
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          notify('Imagem muito grande (máx 5MB)', 'error');
+          return;
+        }
+
+        try {
+          console.log('📷 Comprimindo imagem...');
+          const compressed = await compressImage(file, 1200, 800, 0.7);
+          console.log('📷 Imagem comprimida com sucesso');
+          settings.backgroundImage = compressed;
+          showBackgroundPreview(compressed);
+          notify('Imagem de fundo carregada!');
+        } catch (err) {
+          console.error('Erro ao processar imagem:', err);
+          notify('Erro ao processar imagem', 'error');
+        }
+      });
+
+      const removeBackgroundBtn = document.getElementById('remove-background-btn');
+      if (removeBackgroundBtn) {
+        removeBackgroundBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          settings.backgroundImage = null;
+          settings.backgroundOpacity = 30;
+          hideBackgroundPreview();
+        });
+      }
+
+      const backgroundOpacity = document.getElementById('background-opacity');
+      if (backgroundOpacity) {
+        backgroundOpacity.addEventListener('input', (e) => {
+          settings.backgroundOpacity = parseInt(e.target.value);
+          document.getElementById('background-opacity-value').textContent = e.target.value + '%';
+        });
+      }
+    }
+
+    function showBackgroundPreview(src) {
+      document.getElementById('background-placeholder').style.display = 'none';
+      document.getElementById('background-preview-container').style.display = 'block';
+      document.getElementById('background-preview-img').src = src;
+      document.getElementById('background-opacity-control').style.display = 'block';
+    }
+
+    function hideBackgroundPreview() {
+      document.getElementById('background-placeholder').style.display = 'block';
+      document.getElementById('background-preview-container').style.display = 'none';
+      document.getElementById('background-preview-img').src = '';
+      document.getElementById('background-opacity-control').style.display = 'none';
+      els.backgroundUpload.value = '';
+    }
+
     function showLogoPreview(src) {
       document.getElementById('logo-placeholder').style.display = 'none';
       document.getElementById('logo-preview-container').style.display = 'block';
@@ -1106,8 +1259,15 @@
         updateMockPreview();
       });
 
-      els.hours.addEventListener('input', () => {
-        settings.hours = els.hours.value;
+      els.openTime.addEventListener('change', () => {
+        settings.openTime = els.openTime.value;
+        settings.hours = `${els.openTime.value} às ${els.closeTime.value}`;
+        updateMockPreview();
+      });
+
+      els.closeTime.addEventListener('change', () => {
+        settings.closeTime = els.closeTime.value;
+        settings.hours = `${els.openTime.value} às ${els.closeTime.value}`;
         updateMockPreview();
       });
     }
@@ -1115,7 +1275,7 @@
     function updateMockPreview() {
       // Nome
       document.getElementById('mock-name').textContent = settings.restaurantName || 'Restaurante';
-      
+
       // Horário
       document.getElementById('mock-hours').textContent = settings.hours || '18:00 às 23:00';
       document.getElementById('mock-hours').style.background = `linear-gradient(90deg, ${settings.primaryColor}, ${adjustColor(settings.primaryColor, -20)})`;
@@ -1142,10 +1302,10 @@
 
     function adjustColor(color, amount) {
       const hex = color.replace('#', '');
-      const r = Math.min(255, Math.max(0, parseInt(hex.substr(0,2), 16) + amount));
-      const g = Math.min(255, Math.max(0, parseInt(hex.substr(2,2), 16) + amount));
-      const b = Math.min(255, Math.max(0, parseInt(hex.substr(4,2), 16) + amount));
-      return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+      const r = Math.min(255, Math.max(0, parseInt(hex.substr(0, 2), 16) + amount));
+      const g = Math.min(255, Math.max(0, parseInt(hex.substr(2, 2), 16) + amount));
+      const b = Math.min(255, Math.max(0, parseInt(hex.substr(4, 2), 16) + amount));
+      return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
     }
 
     // Ações
@@ -1157,16 +1317,28 @@
     async function saveSettings() {
       settings.restaurantName = els.restaurantName.value;
       settings.contact = els.contact.value;
-      settings.hours = els.hours.value;
+      settings.openTime = els.openTime.value;
+      settings.closeTime = els.closeTime.value;
+      // Gerar string de horário para exibição
+      settings.hours = `${els.openTime.value} às ${els.closeTime.value}`;
       settings.pixKey = els.pixKey.value;
       settings.pixName = els.pixName.value;
       settings.theme = els.themeSelector.value;
-      
+
       // Configuração de Retirada no Balcão
       const pickupEnabledCheckbox = document.getElementById('pickup-enabled');
       if (pickupEnabledCheckbox) {
         settings.pickupEnabled = pickupEnabledCheckbox.checked;
       }
+
+      // DEBUG: Log do que está sendo salvo
+      console.log('📝 Salvando configurações:', {
+        openTime: settings.openTime,
+        closeTime: settings.closeTime,
+        hours: settings.hours,
+        backgroundImage: settings.backgroundImage ? 'SIM (imagem presente)' : 'NÃO',
+        backgroundOpacity: settings.backgroundOpacity
+      });
 
       try {
         const res = await fetch('/api/custom-settings', {
@@ -1209,4 +1381,5 @@
     }
   </script>
 </body>
+
 </html>
