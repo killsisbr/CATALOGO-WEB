@@ -121,14 +121,14 @@ server/
 ## 5. PRIORIZAÇÃO DE MELHORIAS
 
 ### Fazer AGORA (30min)
-1. [ ] Remover arquivos duplicados da raiz
-2. [ ] Remover brutus.db
+1. [x] Remover arquivos duplicados da raiz (admin.js, pedido_page.html, melhoria.md)
+2. [x] Remover brutus.db
 3. [ ] Avaliar necessidade de pedido-script-debug.js
 
 ### Fazer EM BREVE (2-4h)
 4. [ ] Unificar quadro.js e quadro-pc.js
-5. [ ] Modularizar server.js em routes/
-6. [ ] Criar services/ para lógica de negócio
+5. [x] Modularizar server.js em routes/ **CONCLUÍDO - 2740 -> 330 linhas**
+6. [x] Criar services/ para lógica de negócio **JÁ EXISTIA delivery-service.js**
 
 ### Fazer DEPOIS (1-2 dias)
 7. [ ] Dividir pedido-script.js em módulos

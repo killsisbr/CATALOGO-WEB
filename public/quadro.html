@@ -1638,6 +1638,9 @@
                     <button class="sidebar-btn" data-section="cardapio" onclick="mudarSecaoAdmin('cardapio')">
                         <i class="fas fa-utensils"></i> Cardápio
                     </button>
+                    <button class="sidebar-btn" data-section="buffet" onclick="mudarSecaoAdmin('buffet')">
+                        <i class="fas fa-concierge-bell"></i> Buffet do Dia
+                    </button>
                     <button class="sidebar-btn" data-section="configuracoes" onclick="mudarSecaoAdmin('configuracoes')">
                         <i class="fas fa-cog"></i> Configurações
                     </button>
@@ -1737,6 +1740,49 @@
                     <div id="admin-produtos-lista"
                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
                         <p style="color: var(--text-muted);">Carregando produtos...</p>
+                    </div>
+                </section>
+
+                <!-- Seção Buffet do Dia -->
+                <section id="admin-section-buffet" class="admin-section" style="display: none;">
+                    <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-concierge-bell" style="color: var(--primary);"></i> Buffet do Dia
+                    </h2>
+
+                    <div
+                        style="background: rgba(39, 174, 96, 0.1); border: 1px solid var(--primary); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                        <p style="color: var(--text-muted); margin: 0;">
+                            <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                            Gerencie os itens disponíveis no buffet de hoje. Itens ativos aparecem para seleção nas
+                            marmitas.
+                        </p>
+                    </div>
+
+                    <!-- Formulário para adicionar item -->
+                    <div
+                        style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px; font-size: 1rem;">
+                            <i class="fas fa-plus-circle" style="color: var(--primary);"></i> Adicionar Item
+                        </h3>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="text" id="buffet-novo-item" placeholder="Ex: Arroz, Feijão, Frango..."
+                                style="flex: 1; min-width: 200px; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                            <button onclick="adicionarItemBuffet()"
+                                style="padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de itens do buffet -->
+                    <div
+                        style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                        <h3 style="margin-bottom: 15px; font-size: 1rem;">
+                            <i class="fas fa-list" style="color: var(--primary);"></i> Itens do Buffet
+                        </h3>
+                        <div id="buffet-lista" style="display: flex; flex-direction: column; gap: 10px;">
+                            <p style="color: var(--text-muted);">Carregando itens do buffet...</p>
+                        </div>
                     </div>
                 </section>
 

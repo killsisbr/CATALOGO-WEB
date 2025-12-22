@@ -58,15 +58,71 @@ async function carregarConfiguracoes() {
             logoImg.style.display = 'block';
         }
 
-        // Atualizar campos do modal de configurações
-        document.getElementById('setting-name').value = customSettings.restaurantName || '';
-        document.getElementById('setting-hours').value = customSettings.hours || '';
-        document.getElementById('setting-phone').value = customSettings.contact || '';
-        document.getElementById('setting-pix').value = customSettings.pixKey || '';
-        document.getElementById('setting-pix-name').value = customSettings.pixName || '';
-        document.getElementById('setting-pickup').checked = customSettings.pickupEnabled !== false;
+        // Atualizar campos do modal de configurações com dados corretos
+        const settingName = document.getElementById('setting-name');
+        const settingHours = document.getElementById('setting-hours');
+        const settingPhone = document.getElementById('setting-phone');
+        const settingPix = document.getElementById('setting-pix');
+        const settingPixName = document.getElementById('setting-pix-name');
+        const settingPickup = document.getElementById('setting-pickup');
+
+        if (settingName) settingName.value = customSettings.restaurantName || '';
+        if (settingHours) {
+            // Formatar horário: "18:00 às 23:00"
+            const openTime = customSettings.openTime || '18:00';
+            const closeTime = customSettings.closeTime || '23:00';
+            settingHours.value = `${openTime} às ${closeTime}`;
+        }
+        if (settingPhone) settingPhone.value = customSettings.contact || customSettings.phone || '';
+        if (settingPix) settingPix.value = customSettings.pixKey || '';
+        if (settingPixName) settingPixName.value = customSettings.pixName || '';
+        if (settingPickup) settingPickup.checked = customSettings.pickupEnabled !== false;
     } catch (error) {
         console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+// Função para salvar configurações do modal
+async function saveSettings() {
+    try {
+        const hoursValue = document.getElementById('setting-hours')?.value || '';
+        // Tentar parsear horário no formato "18:00 às 23:00"
+        let openTime = '18:00';
+        let closeTime = '23:00';
+        const hoursMatch = hoursValue.match(/(\d{1,2}:\d{2})\s*[aà]s?\s*(\d{1,2}:\d{2})/i);
+        if (hoursMatch) {
+            openTime = hoursMatch[1];
+            closeTime = hoursMatch[2];
+        }
+
+        const settings = {
+            restaurantName: document.getElementById('setting-name')?.value || '',
+            openTime: openTime,
+            closeTime: closeTime,
+            contact: document.getElementById('setting-phone')?.value || '',
+            pixKey: document.getElementById('setting-pix')?.value || '',
+            pixName: document.getElementById('setting-pix-name')?.value || '',
+            pickupEnabled: document.getElementById('setting-pickup')?.checked !== false
+        };
+
+        const response = await fetch('/api/custom-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showToast('Configurações salvas com sucesso!', 'success');
+            closeModal('settings-modal');
+            // Recarregar configurações para atualizar interface
+            await carregarConfiguracoes();
+        } else {
+            showToast('Erro ao salvar configurações: ' + (data.error || 'Erro desconhecido'), 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar configurações:', error);
+        showToast('Erro ao salvar configurações.', 'error');
     }
 }
 
@@ -1183,9 +1239,140 @@ function mudarSecaoAdmin(secao) {
     // Carregar dados da seção
     if (secao === 'dashboard') carregarDashboard();
     else if (secao === 'cardapio') carregarCardapioAdmin();
+    else if (secao === 'buffet') carregarBuffetAdmin();
     else if (secao === 'configuracoes') carregarConfiguracoesAdmin();
     else if (secao === 'clientes') carregarClientesAdmin();
     else if (secao === 'whatsapp') verificarStatusWhatsApp();
+}
+
+// ============================================================
+// BUFFET DO DIA
+// ============================================================
+
+let buffetItens = [];
+
+async function carregarBuffetAdmin() {
+    const container = document.getElementById('buffet-lista');
+    container.innerHTML = '<p style="color: var(--text-muted);">Carregando...</p>';
+
+    try {
+        const response = await fetch('/api/buffet');
+        const data = await response.json();
+
+        // Verificar se a resposta é um array
+        if (Array.isArray(data)) {
+            buffetItens = data;
+        } else if (data.error) {
+            container.innerHTML = `<p style="color: var(--danger);">Erro: ${data.error}</p>`;
+            return;
+        } else {
+            buffetItens = [];
+        }
+
+        if (buffetItens.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum item no buffet. Adicione itens acima.</p>';
+            return;
+        }
+
+        container.innerHTML = buffetItens.map(item => `
+            <div class="buffet-item-row" style="display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: var(--dark); border-radius: 8px;">
+                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-weight: 600;">${item.nome}</span>
+                    <span style="padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; ${item.ativo ? 'background: rgba(39, 174, 96, 0.2); color: #27ae60;' : 'background: rgba(176, 176, 176, 0.2); color: #888;'}">
+                        ${item.ativo ? 'ATIVO' : 'INATIVO'}
+                    </span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="toggleItemBuffet(${item.id})" 
+                            style="width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; ${item.ativo ? 'background: rgba(241, 196, 15, 0.2); color: #f39c12;' : 'background: rgba(39, 174, 96, 0.2); color: #27ae60;'}"
+                            title="${item.ativo ? 'Desativar' : 'Ativar'}">
+                        <i class="fas ${item.ativo ? 'fa-toggle-off' : 'fa-toggle-on'}"></i>
+                    </button>
+                    <button onclick="removerItemBuffet(${item.id})" 
+                            style="width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(231, 76, 60, 0.2); color: #e74c3c;"
+                            title="Remover">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao carregar buffet:', error);
+        container.innerHTML = '<p style="color: var(--danger);">Erro ao carregar itens do buffet.</p>';
+    }
+}
+
+async function adicionarItemBuffet() {
+    const input = document.getElementById('buffet-novo-item');
+    const nome = input.value.trim();
+
+    if (!nome) {
+        showToast('Digite o nome do item.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/buffet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome })
+        });
+
+        const data = await response.json();
+        if (data.id || data.success) {
+            showToast('Item adicionado ao buffet!', 'success');
+            input.value = '';
+            carregarBuffetAdmin();
+        } else {
+            showToast(data.error || 'Erro ao adicionar item.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar item:', error);
+        showToast('Erro ao adicionar item.', 'error');
+    }
+}
+
+async function toggleItemBuffet(id) {
+    const item = buffetItens.find(i => i.id === id);
+    if (!item) return;
+
+    try {
+        const response = await fetch(`/api/buffet/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ativo: !item.ativo })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Item ${!item.ativo ? 'ativado' : 'desativado'}!`, 'success');
+            carregarBuffetAdmin();
+        } else {
+            showToast('Erro ao atualizar item.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao toggle item:', error);
+        showToast('Erro ao atualizar item.', 'error');
+    }
+}
+
+async function removerItemBuffet(id) {
+    if (!confirm('Tem certeza que deseja remover este item do buffet?')) return;
+
+    try {
+        const response = await fetch(`/api/buffet/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Item removido do buffet!', 'success');
+            carregarBuffetAdmin();
+        } else {
+            showToast('Erro ao remover item.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao remover item:', error);
+        showToast('Erro ao remover item.', 'error');
+    }
 }
 
 // ============================================================
@@ -1204,9 +1391,10 @@ function filtrarPeriodoDash(periodo) {
 async function carregarDashboard() {
     try {
         // Buscar todos os pedidos (incluindo histórico)
-        const response = await fetch('/api/pedidos?all=true');
+        const response = await fetch('/api/pedidos');
         const data = await response.json();
-        adminDadosVendas = data.pedidos || [];
+        // A API pode retornar array direto ou objeto com propriedade pedidos
+        adminDadosVendas = Array.isArray(data) ? data : (data.pedidos || []);
 
         // Filtrar por período
         const agora = new Date();
@@ -1316,15 +1504,160 @@ async function carregarCardapioAdmin() {
 }
 
 function abrirModalAdicionarProduto() {
-    // Por enquanto, redirecionar para admin.html
-    if (confirm('Deseja abrir a página de administração de produtos em nova aba?')) {
-        window.open('/admin.html', '_blank');
-    }
+    // Criar modal inline para adicionar produto
+    const existingModal = document.getElementById('produto-edit-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'produto-edit-modal';
+    modal.className = 'modal-overlay show';
+    modal.style.zIndex = '10000';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus"></i> Novo Produto</h2>
+                <button class="close-btn" onclick="fecharModalProduto()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Nome</label>
+                    <input type="text" id="prod-nome" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Preco (R$)</label>
+                    <input type="number" id="prod-preco" step="0.01" min="0" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Categoria</label>
+                    <input type="text" id="prod-categoria" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Descricao</label>
+                    <textarea id="prod-descricao" rows="3" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;"></textarea>
+                </div>
+                <button onclick="salvarNovoProduto()" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-save"></i> Salvar Produto
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
 function abrirModalCategorias() {
-    if (confirm('Deseja abrir a página de administração de categorias em nova aba?')) {
-        window.open('/admin.html', '_blank');
+    showToast('Gerencie categorias pela lista de produtos - cada produto tem sua categoria.', 'info');
+}
+
+async function editarProdutoAdmin(id) {
+    // Buscar dados do produto
+    const prod = adminProdutos.find(p => p.id === id);
+    if (!prod) return;
+
+    const existingModal = document.getElementById('produto-edit-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'produto-edit-modal';
+    modal.className = 'modal-overlay show';
+    modal.style.zIndex = '10000';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Editar Produto</h2>
+                <button class="close-btn" onclick="fecharModalProduto()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <input type="hidden" id="prod-id" value="${prod.id}">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Nome</label>
+                    <input type="text" id="prod-nome" value="${prod.nome || ''}" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Preco (R$)</label>
+                    <input type="number" id="prod-preco" step="0.01" min="0" value="${prod.preco || 0}" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Categoria</label>
+                    <input type="text" id="prod-categoria" value="${prod.categoria || ''}" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Descricao</label>
+                    <textarea id="prod-descricao" rows="3" style="width: 100%; padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;">${prod.descricao || ''}</textarea>
+                </div>
+                <button onclick="salvarEdicaoProduto()" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-save"></i> Salvar Alteracoes
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function fecharModalProduto() {
+    const modal = document.getElementById('produto-edit-modal');
+    if (modal) modal.remove();
+}
+
+async function salvarNovoProduto() {
+    const nome = document.getElementById('prod-nome').value;
+    const preco = parseFloat(document.getElementById('prod-preco').value) || 0;
+    const categoria = document.getElementById('prod-categoria').value;
+    const descricao = document.getElementById('prod-descricao').value;
+
+    if (!nome) {
+        showToast('Digite o nome do produto.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/produtos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, preco, categoria, descricao })
+        });
+        const data = await response.json();
+        if (data.id || data.success) {
+            showToast('Produto criado com sucesso!', 'success');
+            fecharModalProduto();
+            carregarCardapioAdmin();
+        } else {
+            showToast('Erro ao criar produto.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao criar produto:', error);
+        showToast('Erro ao criar produto.', 'error');
+    }
+}
+
+async function salvarEdicaoProduto() {
+    const id = document.getElementById('prod-id').value;
+    const nome = document.getElementById('prod-nome').value;
+    const preco = parseFloat(document.getElementById('prod-preco').value) || 0;
+    const categoria = document.getElementById('prod-categoria').value;
+    const descricao = document.getElementById('prod-descricao').value;
+
+    if (!nome) {
+        showToast('Digite o nome do produto.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/produtos/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, preco, categoria, descricao })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Produto atualizado com sucesso!', 'success');
+            fecharModalProduto();
+            carregarCardapioAdmin();
+        } else {
+            showToast('Erro ao atualizar produto.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar produto:', error);
+        showToast('Erro ao atualizar produto.', 'error');
     }
 }
 
@@ -1407,9 +1740,10 @@ async function salvarConfiguracoesAdmin() {
 
 async function carregarClientesAdmin() {
     try {
-        const response = await fetch('/api/pedidos?all=true');
+        const response = await fetch('/api/pedidos');
         const data = await response.json();
-        const todosPedidos = data.pedidos || [];
+        // A API pode retornar array direto ou objeto com propriedade pedidos
+        const todosPedidos = Array.isArray(data) ? data : (data.pedidos || []);
 
         // Agrupar por cliente
         const clientesMap = {};
