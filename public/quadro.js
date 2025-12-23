@@ -2050,17 +2050,14 @@ function abrirPainelAdmin() {
                     <button class="admin-menu-item" data-section="cardapio" onclick="selecionarSecaoAdmin('cardapio', this)" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
                         <i class="fas fa-utensils"></i> Cardapio
                     </button>
-                    <button class="admin-menu-item" data-section="configuracoes" onclick="selecionarSecaoAdmin('configuracoes', this)" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
-                        <i class="fas fa-cog"></i> Configuracoes
-                    </button>
                     <button class="admin-menu-item" data-section="clientes" onclick="selecionarSecaoAdmin('clientes', this)" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
                         <i class="fas fa-users"></i> Clientes
                     </button>
-                    <button class="admin-menu-item" data-section="customizacao" onclick="window.location.href='custom.html'" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
-                        <i class="fas fa-palette"></i> Customizacao
-                    </button>
-                    <button class="admin-menu-item" data-section="whatsapp" onclick="window.location.href='whatsapp.html'" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
+                    <button class="admin-menu-item" data-section="whatsapp" onclick="selecionarSecaoAdmin('whatsapp', this)" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
                         <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button class="admin-menu-item" data-section="configuracoes" onclick="selecionarSecaoAdmin('configuracoes', this)" style="width: 100%; padding: 12px 15px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
+                        <i class="fas fa-cog"></i> Configuracoes
                     </button>
                 </div>
                 <div style="padding: 15px 10px; border-top: 1px solid rgba(255,255,255,0.1);">
@@ -2084,59 +2081,42 @@ function abrirPainelAdmin() {
                     </h2>
                     <div id="admin-cardapio-content"></div>
                 </div>
-                <div id="admin-section-configuracoes" style="display: none;">
-                    <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-cog" style="color: var(--primary);"></i> Configuracoes
-                    </h2>
-                    <p style="color: var(--text-muted);">Use o botao "Configuracoes" no header para acessar.</p>
-                </div>
                 <div id="admin-section-clientes" style="display: none;">
                     <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                         <i class="fas fa-users" style="color: var(--primary);"></i> Clientes
                     </h2>
                     <div id="admin-clientes-content"></div>
                 </div>
+                <div id="admin-section-whatsapp" style="display: none;">
+                    <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fab fa-whatsapp" style="color: #25d366;"></i> WhatsApp
+                    </h2>
+                    <div style="background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+                        <div id="whatsapp-status-container">
+                            <div id="whatsapp-qr-area" style="margin-bottom: 20px;">
+                                <p style="color: var(--text-muted); margin-bottom: 15px;">Verificando status...</p>
+                            </div>
+                            <button onclick="verificarStatusWhatsApp()" style="padding: 12px 25px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fab fa-whatsapp"></i> Verificar Conexao
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="admin-section-configuracoes" style="display: none;">
+                    <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-cog" style="color: var(--primary);"></i> Configuracoes
+                    </h2>
+                    <p style="color: var(--text-muted);">Use o botao "Configuracoes" no header para acessar.</p>
+                </div>
             </div>
         </div>
     `;
+
     document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
 
-    // Carregar conteudo das secoes apos modal estar no DOM
-    setTimeout(() => {
-        carregarDashboardAdmin();
-        carregarCardapioAdmin();
-        carregarClientesAdmin();
-    }, 100);
-}
-
-function fecharPainelAdmin() {
-    const modal = document.getElementById('admin-panel-modal');
-    if (modal) modal.remove();
-}
-
-function selecionarSecaoAdmin(secao, btn) {
-    // Remover active de todos os botoes
-    document.querySelectorAll('.admin-menu-item').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = 'var(--text-muted)';
-        b.classList.remove('active');
-    });
-
-    // Adicionar active ao botao clicado
-    btn.style.background = 'rgba(155, 89, 182, 0.2)';
-    btn.style.color = 'white';
-    btn.classList.add('active');
-
-    // Esconder todas as secoes
-    document.querySelectorAll('[id^="admin-section-"]').forEach(s => {
-        s.style.display = 'none';
-    });
-
-    // Mostrar secao selecionada
-    const secaoElement = document.getElementById(`admin-section-${secao}`);
-    if (secaoElement) {
-        secaoElement.style.display = 'block';
-    }
+    // Carregar dashboard por padrão
+    carregarDashboard();
 }
 
 async function carregarDashboardAdmin() {
@@ -2780,4 +2760,422 @@ async function verificarStatusWhatsApp() {
         console.error('Erro ao verificar WhatsApp:', error);
         container.innerHTML = '<p style="color: var(--danger);">Erro ao verificar status do WhatsApp</p>';
     }
+}
+
+// ============================================================
+// DASHBOARD DO PAINEL ADMIN
+// ============================================================
+
+async function carregarDashboard() {
+    const container = document.getElementById('admin-section-dashboard');
+    if (!container) return;
+
+    container.innerHTML = `
+        <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chart-line" style="color: var(--primary);"></i> Dashboard de Vendas
+        </h2>
+        
+        <!-- Filtro de Período -->
+        <div class="period-filter" style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;">
+            <button class="period-btn active" data-period="day" onclick="filtrarPeriodoDash('day')">Hoje</button>
+            <button class="period-btn" data-period="week" onclick="filtrarPeriodoDash('week')">Semana</button>
+            <button class="period-btn" data-period="month" onclick="filtrarPeriodoDash('month')">Mês</button>
+            <button class="period-btn" data-period="year" onclick="filtrarPeriodoDash('year')">Ano</button>
+            <button class="period-btn" data-period="all" onclick="filtrarPeriodoDash('all')">Total</button>
+        </div>
+        
+        <!-- Cards de Estatísticas -->
+        <div class="dash-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="dash-stat-card" style="background: linear-gradient(135deg, #27ae60, #2ecc71); padding: 20px; border-radius: 12px;">
+                <div style="font-size: 0.85rem; opacity: 0.9;">Faturamento</div>
+                <div id="dash-faturamento" style="font-size: 1.8rem; font-weight: 700;">R$ 0,00</div>
+            </div>
+            <div class="dash-stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 20px; border-radius: 12px;">
+                <div style="font-size: 0.85rem; opacity: 0.9;">Pedidos</div>
+                <div id="dash-pedidos" style="font-size: 1.8rem; font-weight: 700;">0</div>
+            </div>
+            <div class="dash-stat-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 20px; border-radius: 12px;">
+                <div style="font-size: 0.85rem; opacity: 0.9;">Ticket Médio</div>
+                <div id="dash-ticket" style="font-size: 1.8rem; font-weight: 700;">R$ 0,00</div>
+            </div>
+            <div class="dash-stat-card" style="background: linear-gradient(135deg, #e67e22, #d35400); padding: 20px; border-radius: 12px;">
+                <div style="font-size: 0.85rem; opacity: 0.9;">Clientes</div>
+                <div id="dash-clientes" style="font-size: 1.8rem; font-weight: 700;">0</div>
+            </div>
+        </div>
+        
+        <!-- Ranking de Produtos -->
+        <div class="ranking-section" style="background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-trophy" style="color: #f1c40f;"></i> Produtos Mais Vendidos
+            </h3>
+            <div id="produtos-ranking" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: var(--text-muted);">Carregando...</p>
+            </div>
+        </div>
+    `;
+
+    // Carregar dados do período atual
+    filtrarPeriodoDash('day');
+}
+
+async function filtrarPeriodoDash(periodo) {
+    adminPeriodo = periodo;
+
+    // Atualizar botões
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.period === periodo) btn.classList.add('active');
+    });
+
+    try {
+        // Calcular estatísticas localmente dos pedidos
+        const now = new Date();
+        let filteredPedidos = pedidos;
+
+        // Filtrar por período
+        if (periodo === 'day') {
+            const hoje = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            filteredPedidos = pedidos.filter(p => new Date(p.data) >= hoje);
+        } else if (periodo === 'week') {
+            const inicioSemana = new Date(now);
+            inicioSemana.setDate(now.getDate() - now.getDay());
+            inicioSemana.setHours(0, 0, 0, 0);
+            filteredPedidos = pedidos.filter(p => new Date(p.data) >= inicioSemana);
+        } else if (periodo === 'month') {
+            const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
+            filteredPedidos = pedidos.filter(p => new Date(p.data) >= inicioMes);
+        } else if (periodo === 'year') {
+            const inicioAno = new Date(now.getFullYear(), 0, 1);
+            filteredPedidos = pedidos.filter(p => new Date(p.data) >= inicioAno);
+        }
+        // 'all' não filtra
+
+        // Calcular estatísticas
+        const faturamento = filteredPedidos.reduce((acc, p) => acc + parseFloat(p.total || 0), 0);
+        const numPedidos = filteredPedidos.length;
+        const ticketMedio = numPedidos > 0 ? faturamento / numPedidos : 0;
+
+        // Contar clientes únicos
+        const clientesUnicos = new Set();
+        filteredPedidos.forEach(p => {
+            if (p.cliente_telefone) clientesUnicos.add(p.cliente_telefone);
+        });
+
+        document.getElementById('dash-faturamento').textContent = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-pedidos').textContent = numPedidos;
+        document.getElementById('dash-ticket').textContent = `R$ ${ticketMedio.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-clientes').textContent = clientesUnicos.size;
+
+        // Carregar ranking de produtos
+        carregarRankingProdutos(filteredPedidos);
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+        showToast('Erro ao carregar estatísticas.', 'error');
+    }
+}
+
+async function carregarRankingProdutos(filteredPedidos) {
+    const container = document.getElementById('produtos-ranking');
+    if (!container) return;
+
+    try {
+        // Contar vendas por produto
+        const produtosVendas = {};
+
+        filteredPedidos.forEach(pedido => {
+            try {
+                const itens = JSON.parse(pedido.itens || '[]');
+                itens.forEach(item => {
+                    const nome = item.produto_nome || item.nome || 'Produto';
+                    const preco = parseFloat(item.preco_unitario || item.preco || 0);
+                    const qtd = parseInt(item.quantidade || 1);
+                    const total = preco * qtd;
+
+                    if (!produtosVendas[nome]) {
+                        produtosVendas[nome] = { nome, quantidade: 0, total: 0 };
+                    }
+                    produtosVendas[nome].quantidade += qtd;
+                    produtosVendas[nome].total += total;
+                });
+            } catch (e) {
+                console.warn('Erro ao processar itens do pedido:', e);
+            }
+        });
+
+        // Converter para array e ordenar
+        const ranking = Object.values(produtosVendas)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10); // Top 10
+
+        if (ranking.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum produto vendido neste período.</p>';
+            return;
+        }
+
+        container.innerHTML = ranking.map((item, index) => {
+            const medalClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'normal';
+            const medalStyle = index === 0
+                ? 'background: linear-gradient(135deg, #f1c40f, #f39c12); color: #000;'
+                : index === 1
+                    ? 'background: linear-gradient(135deg, #bdc3c7, #95a5a6); color: #000;'
+                    : index === 2
+                        ? 'background: linear-gradient(135deg, #e67e22, #d35400); color: white;'
+                        : 'background: var(--border); color: white;';
+
+            return `
+                <div class="ranking-item" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--dark); border-radius: 8px;">
+                    <div class="ranking-position ${medalClass}" style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; ${medalStyle}">
+                        ${index + 1}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${item.nome}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">${item.quantidade} unidades</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--success);">R$ ${item.total.toFixed(2).replace('.', ',')}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Erro ao carregar ranking:', error);
+        container.innerHTML = '<p style="color: var(--danger);">Erro ao carregar ranking.</p>';
+    }
+}
+
+// ============================================================
+// CARDÁPIO DO PAINEL ADMIN
+// ============================================================
+
+async function carregarCardapioAdmin() {
+    const container = document.getElementById('admin-cardapio-content');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button onclick="abrirModalAdicionarProduto()" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-plus"></i> Novo Produto
+            </button>
+            <a href="admin.html" target="_blank" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-external-link-alt"></i> Painel Completo
+            </a>
+        </div>
+        <p style="color: var(--text-muted); padding: 20px; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); border-radius: 8px;">
+            <i class="fas fa-info-circle"></i> Para gerenciar o cardápio completo com imagens, categorias e mais opções, acesse o <strong>Painel Completo</strong>.
+        </p>
+        <div id="admin-produtos-lista-rapida" style="margin-top: 20px; display: grid; gap: 10px;"></div>
+    `;
+
+    carregarProdutosListaRapida();
+}
+
+async function carregarProdutosListaRapida() {
+    const container = document.getElementById('admin-produtos-lista-rapida');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/api/produtos');
+        const produtos = await response.json();
+
+        if (produtos.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum produto cadastrado.</p>';
+            return;
+        }
+
+        // Agrupar por categoria
+        const categorias = {};
+        produtos.forEach(p => {
+            const cat = p.categoria || 'Outros';
+            if (!categorias[cat]) categorias[cat] = [];
+            categorias[cat].push(p);
+        });
+
+        let html = '';
+        Object.keys(categorias).sort().forEach(cat => {
+            html += `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-tag"></i> ${cat}
+                    </h4>
+                    <div style="display: grid; gap: 8px;">
+                        ${categorias[cat].map(p => `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 8px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">${p.nome}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">R$ ${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; ${p.disponivel ? 'background: rgba(39, 174, 96, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #e74c3c;'}">
+                                        ${p.disponivel ? 'Disponível' : 'Indisponível'}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        container.innerHTML = '<p style="color: var(--danger);">Erro ao carregar produtos.</p>';
+    }
+}
+
+function abrirModalAdicionarProduto() {
+    showToast('Use o Painel Completo para adicionar produtos com imagens e mais opções.', 'info');
+    // Pode abrir o admin.html em nova aba
+    window.open('admin.html', '_blank');
+}
+
+// ============================================================
+// CLIENTES DO PAINEL ADMIN
+// ============================================================
+
+async function carregarClientesAdmin() {
+    const container = document.getElementById('admin-clientes-content');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Total de Clientes</div>
+                <div id="clientes-total" style="font-size: 2rem; font-weight: 700; color: var(--primary);">0</div>
+            </div>
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Clientes Recorrentes</div>
+                <div id="clientes-recorrentes" style="font-size: 2rem; font-weight: 700; color: #3498db;">0</div>
+            </div>
+        </div>
+        
+        <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-crown" style="color: #f1c40f;"></i> Melhores Clientes
+            </h3>
+            <div id="top-clientes-lista" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: var(--text-muted);">Carregando...</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        // Analisar pedidos para obter estatísticas de clientes
+        const clientesData = {};
+
+        pedidos.forEach(pedido => {
+            const tel = pedido.cliente_telefone;
+            const nome = pedido.cliente_nome || 'Cliente';
+            const total = parseFloat(pedido.total || 0);
+
+            if (tel) {
+                if (!clientesData[tel]) {
+                    clientesData[tel] = {
+                        nome,
+                        telefone: tel,
+                        pedidos: 0,
+                        total: 0
+                    };
+                }
+                clientesData[tel].pedidos++;
+                clientesData[tel].total += total;
+            }
+        });
+
+        const clientes = Object.values(clientesData);
+        const totalClientes = clientes.length;
+        const recorrentes = clientes.filter(c => c.pedidos > 1).length;
+
+        document.getElementById('clientes-total').textContent = totalClientes;
+        document.getElementById('clientes-recorrentes').textContent = recorrentes;
+
+        // Carregar top clientes
+        carregarTopClientes(clientes);
+    } catch (error) {
+        console.error('Erro ao carregar stats de clientes:', error);
+        document.getElementById('clientes-total').textContent = '0';
+        document.getElementById('clientes-recorrentes').textContent = '0';
+    }
+}
+
+async function carregarTopClientes(clientes) {
+    const container = document.getElementById('top-clientes-lista');
+    if (!container) return;
+
+    try {
+        if (!clientes || clientes.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">Nenhum cliente cadastrado ainda.</p>';
+            return;
+        }
+
+        // Ordenar por valor total
+        const topClientes = clientes
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10);
+
+        container.innerHTML = topClientes.map((cliente, index) => `
+            <div class="cliente-item" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--dark); border-radius: 8px;">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: ${index < 3 ? 'linear-gradient(135deg, #f1c40f, #f39c12)' : 'var(--border)'}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: ${index < 3 ? '#000' : 'white'};">
+                    ${index + 1}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">${cliente.nome}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">${cliente.pedidos} pedidos</div>
+                </div>
+                <div style="font-weight: 700; color: var(--success);">R$ ${cliente.total.toFixed(2).replace('.', ',')}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao carregar top clientes:', error);
+        container.innerHTML = '<p style="color: var(--danger);">Erro ao carregar clientes.</p>';
+    }
+}
+
+// ============================================================
+// NAVEGAÇÃO DO PAINEL ADMIN
+// ============================================================
+
+function selecionarSecaoAdmin(secao, botao) {
+    // Atualizar botões
+    document.querySelectorAll('.admin-menu-item').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--text-muted)';
+    });
+    if (botao) {
+        botao.style.background = 'rgba(155, 89, 182, 0.2)';
+        botao.style.color = 'white';
+    }
+
+    // Esconder todas as seções
+    const sections = ['dashboard', 'cardapio', 'configuracoes', 'clientes', 'whatsapp'];
+    sections.forEach(s => {
+        const el = document.getElementById(`admin-section-${s}`);
+        if (el) el.style.display = 'none';
+    });
+
+    // Mostrar seção selecionada
+    const sectionEl = document.getElementById(`admin-section-${secao}`);
+    if (sectionEl) {
+        sectionEl.style.display = 'block';
+
+        // Carregar dados conforme a seção
+        if (secao === 'dashboard') carregarDashboard();
+        else if (secao === 'cardapio') carregarCardapioAdmin();
+        else if (secao === 'clientes') carregarClientesAdmin();
+        else if (secao === 'whatsapp') verificarStatusWhatsApp();
+        else if (secao === 'configuracoes') {
+            sectionEl.innerHTML = `
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-cog" style="color: var(--primary);"></i> Configurações
+                </h2>
+                <p style="color: var(--text-muted); padding: 20px; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); border-radius: 8px;">
+                    <i class="fas fa-info-circle"></i> Use o botão <strong>"Configurações"</strong> no header do painel para acessar as configurações do sistema.
+                </p>
+            `;
+        }
+    }
+}
+
+function fecharPainelAdmin() {
+    const modal = document.getElementById('admin-panel-modal');
+    if (modal) modal.remove();
 }
