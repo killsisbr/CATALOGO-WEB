@@ -2720,7 +2720,91 @@ async function salvarConfiguracoesAdmin() {
 }
 
 // ============================================================
-// WHATSAPP
+// CONFIGURAÇÕES DO ADMIN PANEL
+// ============================================================
+
+async function carregarConfiguracoesAdmin(container) {
+    if (!container) {
+        container = document.getElementById('admin-section-configuracoes');
+    }
+
+    container.innerHTML = `
+        <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-cog" style="color: var(--primary);"></i> Configurações da Loja
+        </h2>
+        
+        <div style="display: grid; gap: 20px; max-width: 600px;">
+            <!-- Nome da Loja -->
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                    <i class="fas fa-store"></i> Nome da Loja
+                </label>
+                <input type="text" id="config-nome-loja" placeholder="Nome do restaurante"
+                    style="width: 100%; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+            </div>
+            
+            <!-- Horário de Funcionamento -->
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                    <i class="fas fa-clock"></i> Horário de Funcionamento
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="time" id="config-hora-abre"
+                        style="padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    <span>às</span>
+                    <input type="time" id="config-hora-fecha"
+                        style="padding: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+            </div>
+            
+            <!-- Chave PIX -->
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                    <i class="fas fa-qrcode"></i> Chave PIX
+                </label>
+                <input type="text" id="config-pix-key" placeholder="CPF, CNPJ, E-mail ou Celular"
+                    style="width: 100%; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white; margin-bottom: 10px;">
+                <input type="text" id="config-pix-name" placeholder="Nome do Titular"
+                    style="width: 100%; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+            </div>
+            
+            <!-- Taxa de Entrega Base -->
+            <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                    <i class="fas fa-motorcycle"></i> Taxa de Entrega Base (R$)
+                </label>
+                <input type="number" id="config-taxa-base" step="0.50" min="0" placeholder="5.00"
+                    style="width: 100%; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: white;">
+            </div>
+            
+            <!-- Botão Salvar -->
+            <button onclick="salvarConfiguracoesAdmin()"
+                style="padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <i class="fas fa-save"></i> Salvar Configurações
+            </button>
+        </div>
+    `;
+
+    // Carregar dados existentes
+    try {
+        const response = await fetch('/api/custom-settings');
+        const settings = await response.json();
+
+        if (settings) {
+            if (settings.restaurantName) document.getElementById('config-nome-loja').value = settings.restaurantName;
+            if (settings.openTime) document.getElementById('config-hora-abre').value = settings.openTime;
+            if (settings.closeTime) document.getElementById('config-hora-fecha').value = settings.closeTime;
+            if (settings.pixKey) document.getElementById('config-pix-key').value = settings.pixKey;
+            if (settings.pixName) document.getElementById('config-pix-name').value = settings.pixName;
+            if (settings.baseFee !== undefined) document.getElementById('config-taxa-base').value = settings.baseFee;
+        }
+    } catch (error) {
+        console.warn('Não foi possível carregar configurações existentes:', error);
+    }
+}
+
+// ============================================================
+// DASHBOARD DO PAINEL ADMIN
 // ============================================================
 
 async function verificarStatusWhatsApp() {
@@ -2998,15 +3082,25 @@ async function carregarProdutosListaRapida() {
                     </h4>
                     <div style="display: grid; gap: 8px;">
                         ${categorias[cat].map(p => `
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px;">
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600;">${p.nome}</div>
-                                    <div style="font-size: 0.85rem; color: var(--text-muted);">R$ ${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                                        <span style="color: var(--success); font-weight: 600;">R$ ${parseFloat(p.preco).toFixed(2).replace('.', ',')}</span>
+                                    </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; ${p.disponivel ? 'background: rgba(39, 174, 96, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #e74c3c;'}">
+                                    <button onclick="toggleProdutoDisponibilidade(${p.id}, ${p.disponivel ? 1 : 0})" 
+                                            style="padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; ${p.disponivel ? 'background: rgba(39, 174, 96, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #e74c3c;'}"
+                                            title="${p.disponivel ? 'Desativar' : 'Ativar'}">
+                                        <i class="fas ${p.disponivel ? 'fa-check-circle' : 'fa-times-circle'}"></i>
                                         ${p.disponivel ? 'Disponível' : 'Indisponível'}
-                                    </span>
+                                    </button>
+                                    <button onclick="editarPrecoProduto(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.preco})" 
+                                            style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; background: rgba(52, 152, 219, 0.2); color: #3498db; display: flex; align-items: center; justify-content: center;"
+                                            title="Editar Preço">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
                                 </div>
                             </div>
                         `).join('')}
@@ -3019,6 +3113,100 @@ async function carregarProdutosListaRapida() {
     } catch (error) {
         console.error('Erro ao carregar produtos:', error);
         container.innerHTML = '<p style="color: var(--danger);">Erro ao carregar produtos.</p>';
+    }
+}
+
+// Toggle disponibilidade do produto
+async function toggleProdutoDisponibilidade(produtoId, disponivelAtual) {
+    try {
+        const novoStatus = disponivelAtual ? 0 : 1;
+
+        const response = await fetch(`/api/produtos/${produtoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ disponivel: novoStatus })
+        });
+
+        const data = await response.json();
+        if (data.success || response.ok) {
+            showToast(`Produto ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+            carregarProdutosListaRapida();
+        } else {
+            showToast('Erro ao atualizar produto.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao toggle produto:', error);
+        showToast('Erro ao atualizar disponibilidade.', 'error');
+    }
+}
+
+// Editar preço do produto
+async function editarPrecoProduto(produtoId, produtoNome, precoAtual) {
+    // Criar modal de edição de preço
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay show';
+    modal.style.zIndex = '10001';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-dollar-sign"></i> Editar Preço</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 15px;">Produto: <strong>${produtoNome}</strong></p>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Preço Atual</label>
+                    <input type="text" value="R$ ${parseFloat(precoAtual).toFixed(2).replace('.', ',')}" disabled
+                           style="width: 100%; padding: 12px; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted);">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary);">Novo Preço (R$)</label>
+                    <input type="number" id="novo-preco-input" step="0.01" min="0" value="${parseFloat(precoAtual).toFixed(2)}"
+                           style="width: 100%; padding: 12px; background: var(--bg); border: 2px solid var(--primary); border-radius: 8px; color: var(--text); font-size: 1.1rem; font-weight: 600;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-action-btn back" onclick="this.closest('.modal-overlay').remove()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="modal-action-btn advance" onclick="confirmarEdicaoPreco(${produtoId})">
+                    <i class="fas fa-check"></i> Salvar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById('novo-preco-input').focus();
+}
+
+// Confirmar edição de preço
+async function confirmarEdicaoPreco(produtoId) {
+    const novoPreco = parseFloat(document.getElementById('novo-preco-input').value);
+
+    if (isNaN(novoPreco) || novoPreco < 0) {
+        showToast('Preço inválido!', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/produtos/${produtoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preco: novoPreco })
+        });
+
+        const data = await response.json();
+        if (data.success || response.ok) {
+            showToast(`Preço atualizado para R$ ${novoPreco.toFixed(2).replace('.', ',')}!`, 'success');
+            document.querySelector('.modal-overlay').remove();
+            carregarProdutosListaRapida();
+        } else {
+            showToast('Erro ao atualizar preço.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao editar preço:', error);
+        showToast('Erro ao salvar novo preço.', 'error');
     }
 }
 
@@ -3163,14 +3351,7 @@ function selecionarSecaoAdmin(secao, botao) {
         else if (secao === 'clientes') carregarClientesAdmin();
         else if (secao === 'whatsapp') verificarStatusWhatsApp();
         else if (secao === 'configuracoes') {
-            sectionEl.innerHTML = `
-                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-cog" style="color: var(--primary);"></i> Configurações
-                </h2>
-                <p style="color: var(--text-muted); padding: 20px; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); border-radius: 8px;">
-                    <i class="fas fa-info-circle"></i> Use o botão <strong>"Configurações"</strong> no header do painel para acessar as configurações do sistema.
-                </p>
-            `;
+            carregarConfiguracoesAdmin(sectionEl);
         }
     }
 }
