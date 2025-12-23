@@ -24,6 +24,7 @@ import createProdutosRoutes from './routes/produtos.js';
 import createAcaiRoutes from './routes/acai.js';
 import createPedidosRoutes from './routes/pedidos.js';
 import createInstallRoutes from './routes/install.js';
+import eventsRoutes from './routes/events.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -181,6 +182,9 @@ function registerRoutes() {
   // Install
   app.use('/install', createInstallRoutes(db));
   app.use('/api/install', createInstallRoutes(db));
+
+  // SSE Events (tempo real)
+  app.use('/api/events', eventsRoutes);
 
   // Endpoint para cliente por WhatsApp ID
   app.get('/api/clientes/:whatsappId', async (req, res) => {

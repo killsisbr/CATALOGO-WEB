@@ -1,5 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { notifyClients } from './events.js';
+
 
 const router = express.Router();
 
@@ -193,8 +195,15 @@ export default function (db, { getWhatsappService, getRobotEnabled, getDeliveryS
                 };
 
                 res.cookie('brutus_token', token, cookieOptions);
+
+                // Notificar clientes SSE sobre novo pedido
+                notifyClients('novo-pedido', { pedidoId, timestamp: new Date().toISOString() });
+
                 res.json({ success: true, pedidoId, message: 'Pedido criado com sucesso!' });
             } catch (err) {
+                // Notificar mesmo se JWT falhar
+                notifyClients('novo-pedido', { pedidoId, timestamp: new Date().toISOString() });
+
                 res.json({ success: true, pedidoId, message: 'Pedido criado com sucesso!' });
             }
         } catch (error) {

@@ -10,6 +10,7 @@ let autoPrintEnabled = false;
 let robotEnabled = false;
 let customSettings = {};
 let ultimosPedidosIds = new Set();
+let primeiraCarregaCompleta = false; // Flag para evitar imprimir tudo na primeira carga
 
 // ============================================================
 // MODAL DE INPUT CUSTOMIZADO (substitui prompt)
@@ -118,10 +119,117 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarBlacklist(); // Carregar blacklist antes dos pedidos
     await carregarPedidos();
     iniciarAtualizacaoAutomatica();
+    iniciarSSE(); // Conexão tempo real
     setupEventListeners();
     carregarEstadoRobo();
     carregarEstadoAutoPrint();
 });
+
+// ============================================================
+// SERVER-SENT EVENTS (TEMPO REAL)
+// ============================================================
+
+let sseConnection = null;
+let sseReconnectTimeout = null;
+
+function iniciarSSE() {
+    // Evitar múltiplas conexões
+    if (sseConnection) {
+        sseConnection.close();
+    }
+
+    try {
+        sseConnection = new EventSource('/api/events/stream');
+
+        sseConnection.onopen = () => {
+            console.log('[SSE] Conectado ao servidor');
+            // Limpar timeout de reconexão
+            if (sseReconnectTimeout) {
+                clearTimeout(sseReconnectTimeout);
+                sseReconnectTimeout = null;
+            }
+        };
+
+        // Evento de novo pedido
+        sseConnection.addEventListener('novo-pedido', (event) => {
+            console.log('[SSE] Novo pedido recebido:', event.data);
+            try {
+                const data = JSON.parse(event.data);
+                // Tocar som de notificação
+                tocarSomNotificacao();
+                // Atualizar lista de pedidos
+                carregarPedidos();
+                showToast(`Novo pedido #${data.pedidoId} recebido!`, 'success');
+            } catch (e) {
+                console.error('[SSE] Erro ao processar novo pedido:', e);
+                carregarPedidos();
+            }
+        });
+
+        // Heartbeat (manter conexão viva)
+        sseConnection.addEventListener('heartbeat', (event) => {
+            console.log('[SSE] Heartbeat recebido');
+        });
+
+        sseConnection.onerror = (error) => {
+            console.error('[SSE] Erro na conexão:', error);
+            sseConnection.close();
+
+            // Reconectar após 5 segundos
+            if (!sseReconnectTimeout) {
+                sseReconnectTimeout = setTimeout(() => {
+                    console.log('[SSE] Tentando reconectar...');
+                    iniciarSSE();
+                }, 5000);
+            }
+        };
+
+    } catch (e) {
+        console.error('[SSE] Falha ao iniciar:', e);
+        // Fallback para polling tradicional
+    }
+}
+
+// Som de notificação para novos pedidos
+function tocarSomNotificacao() {
+    try {
+        // Criar contexto de áudio
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Criar oscilador para som de "ding"
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.frequency.value = 880; // Nota A5
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.5);
+
+        // Segundo ding (mais agudo)
+        setTimeout(() => {
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.frequency.value = 1320; // Nota E6
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc2.start(audioCtx.currentTime);
+            osc2.stop(audioCtx.currentTime + 0.5);
+        }, 150);
+
+    } catch (e) {
+        console.warn('Não foi possível tocar som de notificação:', e);
+    }
+}
 
 function setupEventListeners() {
     // Botões do header
@@ -237,13 +345,32 @@ async function carregarPedidos() {
 
         // Detectar novos pedidos para auto-print
         const idsAtuais = new Set(pedidos.map(p => p.id));
-        const novosPedidos = pedidos.filter(p => !ultimosPedidosIds.has(p.id) && p.status === 'pending');
 
-        if (autoPrintEnabled && novosPedidos.length > 0 && ultimosPedidosIds.size > 0) {
-            novosPedidos.forEach(p => imprimirPedido(p));
+        // Só imprimir automaticamente se:
+        // 1. Auto-print estiver ativado
+        // 2. Já passou da primeira carga (para não imprimir todos ao abrir)
+        // 3. Houver pedidos novos pendentes
+        if (primeiraCarregaCompleta && autoPrintEnabled) {
+            const novosPedidos = pedidos.filter(p =>
+                !ultimosPedidosIds.has(p.id) && p.status === 'pending'
+            );
+
+            if (novosPedidos.length > 0) {
+                console.log(`[Auto-Print] Imprimindo ${novosPedidos.length} novo(s) pedido(s)`);
+                novosPedidos.forEach(p => {
+                    imprimirPedido(p);
+                    console.log(`[Auto-Print] Pedido #${p.id} enviado para impressão`);
+                });
+            }
         }
 
         ultimosPedidosIds = idsAtuais;
+
+        // Marcar que a primeira carga foi concluída
+        if (!primeiraCarregaCompleta) {
+            primeiraCarregaCompleta = true;
+            console.log('[Quadro] Primeira carga concluída, auto-print ativado para próximos pedidos');
+        }
 
         renderizarPedidos();
         atualizarEstatisticas();
