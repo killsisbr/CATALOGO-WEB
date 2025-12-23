@@ -943,7 +943,7 @@ function imprimirPedido(pedido) {
         <head>
           <title>Pedido #${pedido.id}</title>
           <style>
-            body { font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4; margin: 0; padding: 10px; width: 80mm; }
+            body { font-family: 'Courier New', monospace; font-size: 16px; line-height: 1.5; margin: 0; padding: 10px; width: 80mm; }
             pre { margin: 0; white-space: pre-wrap; }
             @media print { body { width: 80mm; margin: 0; padding: 5px; } }
           </style>
@@ -999,8 +999,57 @@ function formatarPedidoParaImpressao(pedido) {
         const nome = item.produto_nome || item.nome || 'Produto';
         const qty = item.quantidade || 1;
         const preco = parseFloat(item.preco_unitario || item.preco || 0);
+
+        // Nome e preço base do produto
         texto += `  ${qty}x ${nome}\n`;
         texto += `     R$ ${preco.toFixed(2)} = R$ ${(preco * qty).toFixed(2)}\n`;
+
+        // Extrair e imprimir adicionais
+        let adicionais = [];
+        let buffetList = [];
+        try {
+            if (item.adicionais) {
+                if (typeof item.adicionais === 'string') {
+                    const parsed = JSON.parse(item.adicionais);
+                    // Novo formato: objeto com adicionais e buffet
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        adicionais = parsed.adicionais || [];
+                        buffetList = parsed.buffet || [];
+                    } else {
+                        adicionais = parsed || [];
+                    }
+                } else if (Array.isArray(item.adicionais)) {
+                    adicionais = item.adicionais;
+                } else if (typeof item.adicionais === 'object') {
+                    adicionais = item.adicionais.adicionais || [];
+                    buffetList = item.adicionais.buffet || [];
+                }
+            }
+        } catch (e) { /* ignore */ }
+
+        // Imprimir adicionais com seus preços
+        if (adicionais.length > 0) {
+            adicionais.forEach(adicional => {
+                const nomeAd = adicional.nome || adicional.name || adicional;
+                const precoAd = parseFloat(adicional.preco || adicional.price || 0);
+                if (precoAd > 0) {
+                    texto += `     + ${nomeAd} (+R$ ${precoAd.toFixed(2)})\n`;
+                } else {
+                    texto += `     + ${nomeAd}\n`;
+                }
+            });
+        }
+
+        // Imprimir buffet (para marmitas)
+        if (buffetList.length > 0) {
+            texto += `     BUFFET: ${buffetList.map(b => b.nome || b.name || b).join(', ')}\n`;
+        }
+
+        // Imprimir observações do item (ex: sem cebola, ponto da carne, etc.)
+        const obsItem = item.observacao || item.obs || '';
+        if (obsItem && obsItem.trim()) {
+            texto += `     OBS: ${obsItem.trim()}\n`;
+        }
     });
 
     texto += linha + '\n';
