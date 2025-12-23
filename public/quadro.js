@@ -799,8 +799,19 @@ function imprimirPedido(pedido) {
     try {
         const conteudo = formatarPedidoParaImpressao(pedido);
 
-        const janelaImpressao = window.open('', '_blank');
-        janelaImpressao.document.write(`
+        // Remover iframe anterior se existir
+        const iframeAntigo = document.getElementById('print-iframe');
+        if (iframeAntigo) iframeAntigo.remove();
+
+        // Criar iframe oculto para impressão
+        const iframe = document.createElement('iframe');
+        iframe.id = 'print-iframe';
+        iframe.style.cssText = 'position: absolute; width: 0; height: 0; border: none; visibility: hidden;';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
       <html>
         <head>
           <title>Pedido #${pedido.id}</title>
@@ -813,14 +824,18 @@ function imprimirPedido(pedido) {
         <body><pre>${conteudo}</pre></body>
       </html>
     `);
-        janelaImpressao.document.close();
-        janelaImpressao.focus();
+        doc.close();
 
+        // Aguardar o conteúdo carregar e imprimir
+        iframe.contentWindow.focus();
         setTimeout(() => {
-            janelaImpressao.print();
+            iframe.contentWindow.print();
+            // Remover iframe após impressão
+            setTimeout(() => iframe.remove(), 1000);
         }, 300);
     } catch (error) {
         console.error('Erro ao imprimir:', error);
+        showToast('Erro ao imprimir pedido.', 'error');
     }
 }
 
