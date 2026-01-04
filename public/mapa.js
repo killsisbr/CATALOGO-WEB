@@ -42,16 +42,16 @@ function carregarClienteCache() {
   try {
     const cacheStr = localStorage.getItem(CLIENTE_CACHE_KEY);
     if (!cacheStr) return null;
-    
+
     const cacheData = JSON.parse(cacheStr);
-    
+
     // Verificar se o cache expirou
     if (cacheData.expiry && Date.now() > cacheData.expiry) {
       console.log('⚠️ Cache do cliente expirado, removendo...');
       localStorage.removeItem(CLIENTE_CACHE_KEY);
       return null;
     }
-    
+
     console.log('✅ Dados do cliente carregados do cache local:', cacheData);
     return cacheData;
   } catch (error) {
@@ -103,24 +103,24 @@ function initializeMapEvents() {
   if (mapElements.useLocationBtn) {
     mapElements.useLocationBtn.addEventListener('click', showMapWithUserLocation);
   }
-  
+
   // Adicionar evento ao botão de confirmar localização
   if (mapElements.confirmLocationBtn) {
     mapElements.confirmLocationBtn.addEventListener('click', confirmLocation);
   }
-  
+
   // Adicionar evento ao botão de cancelar
   if (mapElements.cancelMapBtn) {
     mapElements.cancelMapBtn.addEventListener('click', closeMapModal);
   }
-  
+
   // Adicionar evento aos botões de fechar
   if (mapElements.closeButtons) {
     mapElements.closeButtons.forEach(button => {
       button.addEventListener('click', closeMapModal);
     });
   }
-  
+
   // Fechar modal ao clicar fora
   if (mapElements.mapModal) {
     mapElements.mapModal.addEventListener('click', (e) => {
@@ -136,13 +136,13 @@ function showMapWithUserLocation() {
   if (navigator.geolocation) {
     // Mostrar mensagem de carregamento
     showDeliveryLoading();
-    
+
     navigator.geolocation.getCurrentPosition(
       position => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
         userLocation = { lat: latitude, lng: longitude };
-        
+
         // Abrir modal do mapa para o cliente ajustar a localização
         openMapModal(latitude, longitude);
       },
@@ -182,7 +182,7 @@ function loadOpenRouteServiceAPI(callback) {
     callback();
     return;
   }
-  
+
   // Verificar se o script já foi adicionado
   if (document.querySelector('script[src*="leaflet"]')) {
     // Aguardar o carregamento
@@ -194,27 +194,27 @@ function loadOpenRouteServiceAPI(callback) {
     }, 100);
     return;
   }
-  
+
   // Carregar Leaflet CSS
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   document.head.appendChild(link);
-  
+
   // Carregar Leaflet JS
   const script = document.createElement('script');
   script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
   script.async = true;
   script.defer = true;
-  
-  script.onload = function() {
+
+  script.onload = function () {
     callback();
   };
-  
-  script.onerror = function() {
+
+  script.onerror = function () {
     showDeliveryError('Erro ao carregar a API do mapa. Verifique sua conexão.');
   };
-  
+
   document.head.appendChild(script);
 }
 
@@ -225,37 +225,37 @@ function initMap(lat, lng) {
     console.error('Contêiner do mapa não encontrado');
     return;
   }
-  
+
   const location = [lat, lng];
-  
+
   // Criar mapa com OpenStreetMap
   if (map) {
     map.remove();
   }
-  
+
   map = L.map(mapElements.mapContainer).setView(location, 16);
-  
+
   // Adicionar camada do OpenStreetMap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-  
+
   // Criar marcador draggable
   if (marker) {
     map.removeLayer(marker);
   }
-  
+
   marker = L.marker(location, { draggable: true }).addTo(map);
   marker.bindPopup('Arraste para ajustar a localização').openPopup();
-  
+
   // Adicionar evento para quando o marcador for arrastado
-  marker.on('dragend', function() {
+  marker.on('dragend', function () {
     const position = marker.getLatLng();
     userLocation = { lat: position.lat, lng: position.lng };
   });
-  
+
   // Adicionar evento para quando o mapa for clicado
-  map.on('click', function(event) {
+  map.on('click', function (event) {
     marker.setLatLng(event.latlng);
     userLocation = { lat: event.latlng.lat, lng: event.latlng.lng };
   });
@@ -282,10 +282,10 @@ async function confirmLocation() {
   if (userLocation) {
     // Fechar modal do mapa
     closeMapModal();
-    
+
     // Mostrar loading
     showDeliveryLoading();
-    
+
     // Calcular entrega e obter endereço
     await calculateDeliveryForConfirmation(userLocation.lat, userLocation.lng);
 
@@ -310,7 +310,7 @@ async function confirmLocation() {
 function showDeliveryLoading() {
   const deliveryError = document.getElementById('delivery-error');
   const deliveryInfo = document.getElementById('delivery-info');
-  
+
   if (deliveryError) {
     deliveryError.textContent = 'Obtendo sua localização...';
     deliveryError.style.display = 'block';
@@ -324,7 +324,7 @@ function showDeliveryLoading() {
 function showDeliveryError(message) {
   const deliveryError = document.getElementById('delivery-error');
   const deliveryInfo = document.getElementById('delivery-info');
-  
+
   if (deliveryError) {
     // Se a mensagem for HTML, inserir como HTML, caso contrário como texto
     if (message.includes('<') && message.includes('>')) {
@@ -349,14 +349,14 @@ async function calculateDeliveryForConfirmation(latitude, longitude) {
       },
       body: JSON.stringify({ latitude, longitude })
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       if (data.error) {
         // Fora da área de entrega ou erro específico
         showDeliveryError(data.error);
-        
+
         // Atualizar informações de entrega no objeto global mesmo quando há erro
         if (typeof window !== 'undefined') {
           window.entregaInfo = {
@@ -388,14 +388,14 @@ async function calculateDelivery(latitude, longitude) {
       },
       body: JSON.stringify({ latitude, longitude })
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       if (data.error) {
         // Fora da área de entrega ou erro específico
         showDeliveryError(data.error);
-        
+
         // Atualizar informações de entrega no objeto global mesmo quando há erro
         // Isso é importante para que o sistema reconheça que a entrega foi calculada
         if (typeof window !== 'undefined') {
@@ -408,19 +408,19 @@ async function calculateDelivery(latitude, longitude) {
       } else {
         // Entrega válida
         showDeliveryInfo(data.distance, data.price);
-        
+
         // Preencher o campo de endereço com o endereço convertido, se disponível
         const clientAddress = document.getElementById('client-address');
         if (data.endereco && clientAddress) {
           clientAddress.value = data.endereco;
         }
-        
+
         // Salvar coordenadas no elemento hidden para envio com o pedido
         const coordsInput = document.getElementById('client-coordinates');
         if (coordsInput) {
           coordsInput.value = JSON.stringify({ lat: latitude, lng: longitude });
         }
-        
+
         // Atualizar informações de entrega no objeto global
         if (typeof window !== 'undefined') {
           window.entregaInfo = {
@@ -445,7 +445,7 @@ function showDeliveryInfo(distance, price) {
   const deliveryDistance = document.getElementById('delivery-distance');
   const deliveryPrice = document.getElementById('delivery-price');
   const deliveryError = document.getElementById('delivery-error');
-  
+
   if (deliveryInfo && deliveryDistance && deliveryPrice) {
     deliveryDistance.textContent = distance.toFixed(2);
     deliveryPrice.textContent = price.toFixed(2).replace('.', ',');
@@ -453,10 +453,10 @@ function showDeliveryInfo(distance, price) {
     if (deliveryError) {
       deliveryError.style.display = 'none';
     }
-    
+
     // Atualizar total do pedido
     updateOrderTotalWithDelivery(price);
-            
+
     // Atualizar informações de entrega no objeto global
     if (typeof window !== 'undefined') {
       window.entregaInfo = {
@@ -485,27 +485,27 @@ function showDeliveryInfo(distance, price) {
 function updateOrderTotalWithDelivery(deliveryPrice) {
   const orderTotalElement = document.getElementById('order-total');
   const cartTotalElement = document.getElementById('cart-total');
-  
+
   if (orderTotalElement) {
     // Extrair valor atual
     const currentTotalText = orderTotalElement.textContent.replace('R$ ', '').replace(',', '.');
     const currentTotal = parseFloat(currentTotalText) || 0;
-    
+
     // Calcular novo total
     const newTotal = currentTotal + deliveryPrice;
-    
+
     // Atualizar exibição
     orderTotalElement.textContent = `R$ ${newTotal.toFixed(2).replace('.', ',')}`;
   }
-  
+
   if (cartTotalElement) {
     // Extrair valor atual
     const currentTotalText = cartTotalElement.textContent.replace('R$ ', '').replace(',', '.');
     const currentTotal = parseFloat(currentTotalText) || 0;
-    
+
     // Calcular novo total
     const newTotal = currentTotal + deliveryPrice;
-    
+
     // Atualizar exibição
     cartTotalElement.textContent = `R$ ${newTotal.toFixed(2).replace('.', ',')}`;
   }
@@ -514,11 +514,15 @@ function updateOrderTotalWithDelivery(deliveryPrice) {
 // Tratar erros de localização (reutilizando função existente)
 function handleLocationError(error) {
   let errorMessage = '';
-  
+
   switch (error.code) {
     case error.PERMISSION_DENIED:
-      errorMessage = 'Permissão para acessar localização negada. Por favor, habilite o acesso à localização nas configurações do seu navegador.';
-      break;
+      // Permissão negada - abrir modal de entrada manual de endereço
+      errorMessage = 'Permissão para acessar localização negada.';
+      showDeliveryError(errorMessage);
+      // Abrir modal de entrada manual de endereço
+      openManualAddressModal();
+      return; // Sair da função para não mostrar mais mensagens
     case error.POSITION_UNAVAILABLE:
       errorMessage = 'Informação de localização indisponível. Por favor, tente novamente.';
       break;
@@ -529,7 +533,7 @@ function handleLocationError(error) {
       errorMessage = 'Erro desconhecido ao obter localização.';
       break;
   }
-  
+
   showDeliveryError(errorMessage);
 }
 
@@ -539,12 +543,12 @@ function showAddressConfirmModal(endereco, distance, price, latitude, longitude)
   const addressInput = document.getElementById('address-confirm-input');
   const modalDistance = document.getElementById('modal-distance');
   const modalPrice = document.getElementById('modal-delivery-price');
-  
+
   if (!modal || !addressInput) {
     console.error('Modal de confirmação de endereço não encontrado');
     return;
   }
-  
+
   // Preencher dados no modal
   addressInput.value = endereco;
   const addressNotes = document.getElementById('address-notes');
@@ -555,34 +559,34 @@ function showAddressConfirmModal(endereco, distance, price, latitude, longitude)
   }
   if (modalDistance) modalDistance.textContent = distance.toFixed(2);
   if (modalPrice) modalPrice.textContent = price.toFixed(2).replace('.', ',');
-  
+
   // Guardar dados temporariamente
   modal.dataset.latitude = latitude;
   modal.dataset.longitude = longitude;
   modal.dataset.distance = distance;
   modal.dataset.price = price;
-  
+
   // Mostrar modal
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
-  
+
   // Adicionar eventos aos botões (remover listeners antigos primeiro)
   const confirmBtn = document.getElementById('confirm-address-btn');
   const cancelBtn = document.getElementById('cancel-address-btn');
   const closeBtn = modal.querySelector('.close-address-modal');
-  
+
   if (confirmBtn) {
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
     newConfirmBtn.addEventListener('click', confirmAddressFromModal);
   }
-  
+
   if (cancelBtn) {
     const newCancelBtn = cancelBtn.cloneNode(true);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
     newCancelBtn.addEventListener('click', closeAddressConfirmModal);
   }
-  
+
   if (closeBtn) {
     const newCloseBtn = closeBtn.cloneNode(true);
     closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
@@ -603,20 +607,20 @@ function closeAddressConfirmModal() {
 function confirmAddressFromModal() {
   const modal = document.getElementById('address-confirm-modal');
   const addressInput = document.getElementById('address-confirm-input');
-  
+
   if (!modal || !addressInput) return;
-  
+
   const endereco = addressInput.value.trim();
   const latitude = parseFloat(modal.dataset.latitude);
   const longitude = parseFloat(modal.dataset.longitude);
   const distance = parseFloat(modal.dataset.distance);
   const price = parseFloat(modal.dataset.price);
-  
+
   if (!endereco) {
     alert('Por favor, informe um endereço válido.');
     return;
   }
-  
+
   // Preencher o campo de endereço principal (hidden input) e o preview
   const clientAddressHidden = document.getElementById('client-address');
   const clientAddressPreview = document.getElementById('client-address-preview');
@@ -627,16 +631,16 @@ function confirmAddressFromModal() {
     clientAddressPreview.textContent = endereco;
     clientAddressPreview.classList.add('filled');
   }
-  
+
   // Salvar coordenadas no elemento hidden
   const coordsInput = document.getElementById('client-coordinates');
   if (coordsInput) {
     coordsInput.value = JSON.stringify({ lat: latitude, lng: longitude });
   }
-  
+
   // Atualizar informações de entrega
   showDeliveryInfo(distance, price);
-  
+
   // Atualizar informações de entrega no objeto global
   if (typeof window !== 'undefined') {
     window.entregaInfo = {
@@ -680,13 +684,13 @@ function confirmAddressFromModal() {
   if (typeof window !== 'undefined') {
     window.entregaInfo.addressNote = window.entregaInfo.addressNote || null;
   }
-  
+
   // ============================================================
   // SALVAR DADOS NO CACHE LOCAL
   // ============================================================
   const clientNameInput = document.getElementById('client-name');
   const clienteNome = clientNameInput ? clientNameInput.value.trim() : '';
-  
+
   salvarClienteCache({
     nome: clienteNome,
     endereco: endereco,
@@ -695,9 +699,9 @@ function confirmAddressFromModal() {
     price: price,
     addressNote: window.entregaInfo.addressNote || ''
   });
-  
+
   console.log('✅ Endereço confirmado e salvo no cache local');
-  
+
   // Fechar modal
   closeAddressConfirmModal();
 }
@@ -706,5 +710,167 @@ function confirmAddressFromModal() {
 window.Mapa = {
   showMapWithUserLocation,
   openMapModal,
-  closeMapModal
+  closeMapModal,
+  openManualAddressModal
+};
+
+// ============================================================
+// MODAL DE ENDEREÇO MANUAL (quando geolocalização negada)
+// ============================================================
+
+// Abrir modal de endereço manual
+function openManualAddressModal() {
+  const modal = document.getElementById('manual-address-modal');
+  if (!modal) {
+    console.error('Modal de endereço manual não encontrado');
+    return;
+  }
+
+  // Mostrar modal
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  // Focar no primeiro campo
+  const streetInput = document.getElementById('manual-street');
+  if (streetInput) {
+    setTimeout(() => streetInput.focus(), 100);
+  }
+
+  // Adicionar eventos aos botões (remover listeners antigos primeiro)
+  setupManualAddressEvents();
+}
+
+// Fechar modal de endereço manual
+function closeManualAddressModal() {
+  const modal = document.getElementById('manual-address-modal');
+  if (modal) {
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Configurar eventos do modal de endereço manual
+function setupManualAddressEvents() {
+  const modal = document.getElementById('manual-address-modal');
+  if (!modal) return;
+
+  const confirmBtn = document.getElementById('confirm-manual-address-btn');
+  const cancelBtn = document.getElementById('cancel-manual-address-btn');
+  const closeBtn = modal.querySelector('.close-manual-address-modal');
+
+  // Remover listeners antigos e adicionar novos
+  if (confirmBtn) {
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener('click', processManualAddress);
+  }
+
+  if (cancelBtn) {
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    newCancelBtn.addEventListener('click', closeManualAddressModal);
+  }
+
+  if (closeBtn) {
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener('click', closeManualAddressModal);
+  }
+
+  // Fechar ao clicar fora
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeManualAddressModal();
+    }
+  });
+}
+
+// Processar endereço manual
+async function processManualAddress() {
+  const street = document.getElementById('manual-street')?.value?.trim() || '';
+  const number = document.getElementById('manual-number')?.value?.trim() || '';
+  const neighborhood = document.getElementById('manual-neighborhood')?.value?.trim() || '';
+  const notes = document.getElementById('manual-notes')?.value?.trim() || '';
+
+  // Validar campos obrigatórios
+  if (!street) {
+    alert('Por favor, informe a rua/avenida.');
+    document.getElementById('manual-street')?.focus();
+    return;
+  }
+
+  if (!number) {
+    alert('Por favor, informe o número.');
+    document.getElementById('manual-number')?.focus();
+    return;
+  }
+
+  // Montar endereço completo
+  let endereco = `${street}, ${number}`;
+  if (neighborhood) {
+    endereco += `, ${neighborhood}`;
+  }
+  endereco += ', Imbituva, PR, Brazil';
+
+  // Fechar modal de entrada manual
+  closeManualAddressModal();
+
+  // Mostrar loading
+  showDeliveryLoading();
+
+  try {
+    // Calcular taxa de entrega usando o endereço digitado
+    const response = await fetch('/api/entrega/calcular-taxa', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ endereco })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Mostrar modal de confirmação de endereço com os dados
+      const lat = data.coordinates?.lat || 0;
+      const lng = data.coordinates?.lng || 0;
+
+      // Guardar coordenadas
+      userLocation = { lat, lng };
+
+      // Preencher dados de entrega
+      window.entregaInfo = {
+        distance: data.distance,
+        price: data.price,
+        coordinates: { lat, lng },
+        addressNote: notes
+      };
+
+      // Usar o endereço digitado pelo cliente (não o genérico da geocodificação)
+      // O endereço já foi montado com rua, número e bairro
+      const enderecoFinal = endereco;
+
+      // Abrir modal de confirmação de endereço
+      showAddressConfirmModal(enderecoFinal, data.distance, data.price, lat, lng);
+
+      // Preencher observações no modal
+      const addressNotes = document.getElementById('address-notes');
+      if (addressNotes && notes) {
+        addressNotes.value = notes;
+      }
+
+    } else {
+      showDeliveryError(data.error || 'Não foi possível calcular a entrega para esse endereço. Verifique o endereço e tente novamente.');
+    }
+  } catch (error) {
+    console.error('Erro ao processar endereço manual:', error);
+    showDeliveryError('Erro ao processar o endereço. Por favor, tente novamente.');
+  }
+}
+
+// Exportar funções de endereço manual para uso global
+window.ManualAddress = {
+  open: openManualAddressModal,
+  close: closeManualAddressModal,
+  process: processManualAddress
 };

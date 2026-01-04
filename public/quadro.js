@@ -967,7 +967,7 @@ function imprimirPedido(pedido) {
 }
 
 function formatarPedidoParaImpressao(pedido) {
-    const largura = 32;
+    const largura = 48;
     const linha = '='.repeat(largura);
     const linhaPontilhada = '-'.repeat(largura);
 
@@ -977,8 +977,10 @@ function formatarPedidoParaImpressao(pedido) {
     };
 
     let texto = '';
-    texto += centralizar(customSettings.restaurantName || 'RESTAURANTE') + '\n';
-    texto += centralizar(customSettings.contact || '') + '\n';
+
+    // Cabeçalho
+    texto += centralizar('BRUTUS BURGER') + '\n';
+    texto += centralizar('(42) 9 9983-0247') + '\n';
     texto += linha + '\n';
     texto += centralizar(`PEDIDO #${pedido.id}`) + '\n';
     texto += linha + '\n';
@@ -991,6 +993,7 @@ function formatarPedidoParaImpressao(pedido) {
     texto += `CLIENTE: ${pedido.cliente_nome || 'N/A'}\n`;
     if (pedido.cliente_telefone) texto += `TEL: ${pedido.cliente_telefone}\n`;
     if (pedido.cliente_endereco) texto += `END: ${pedido.cliente_endereco}\n`;
+    if (pedido.observacao_entrega) texto += `OBS: ${pedido.observacao_entrega}\n`;
     texto += `PAG: ${pedido.forma_pagamento || 'N/A'}\n`;
     texto += linhaPontilhada + '\n';
 
@@ -1000,7 +1003,6 @@ function formatarPedidoParaImpressao(pedido) {
         const qty = item.quantidade || 1;
         const preco = parseFloat(item.preco_unitario || item.preco || 0);
 
-        // Nome e preço base do produto
         texto += `  ${qty}x ${nome}\n`;
         texto += `     R$ ${preco.toFixed(2)} = R$ ${(preco * qty).toFixed(2)}\n`;
 
@@ -1011,7 +1013,6 @@ function formatarPedidoParaImpressao(pedido) {
             if (item.adicionais) {
                 if (typeof item.adicionais === 'string') {
                     const parsed = JSON.parse(item.adicionais);
-                    // Novo formato: objeto com adicionais e buffet
                     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                         adicionais = parsed.adicionais || [];
                         buffetList = parsed.buffet || [];
@@ -1027,25 +1028,26 @@ function formatarPedidoParaImpressao(pedido) {
             }
         } catch (e) { /* ignore */ }
 
-        // Imprimir adicionais com seus preços
+        // Imprimir adicionais (multiplicados pela quantidade do item)
         if (adicionais.length > 0) {
             adicionais.forEach(adicional => {
                 const nomeAd = adicional.nome || adicional.name || adicional;
                 const precoAd = parseFloat(adicional.preco || adicional.price || 0);
                 if (precoAd > 0) {
-                    texto += `     + ${nomeAd} (+R$ ${precoAd.toFixed(2)})\n`;
+                    const precoAdTotal = precoAd * qty;
+                    texto += `     + ${nomeAd} (+R$ ${precoAdTotal.toFixed(2)})\n`;
                 } else {
                     texto += `     + ${nomeAd}\n`;
                 }
             });
         }
 
-        // Imprimir buffet (para marmitas)
+        // Imprimir buffet
         if (buffetList.length > 0) {
             texto += `     BUFFET: ${buffetList.map(b => b.nome || b.name || b).join(', ')}\n`;
         }
 
-        // Imprimir observações do item (ex: sem cebola, ponto da carne, etc.)
+        // Imprimir observações do item
         const obsItem = item.observacao || item.obs || '';
         if (obsItem && obsItem.trim()) {
             texto += `     OBS: ${obsItem.trim()}\n`;

@@ -2461,24 +2461,29 @@ function tratarErroLocalizacao(error) {
   let errorMessage = '';
   let showRetryButton = false;
   let showInstructions = false;
+  let showManualAddressButton = false;
 
   switch (error.code) {
     case error.PERMISSION_DENIED:
       errorMessage = 'Permissão para acessar localização negada.';
       showRetryButton = true;
       showInstructions = true;
+      showManualAddressButton = true; // Mostrar botão para digitar endereço manual
       break;
     case error.POSITION_UNAVAILABLE:
       errorMessage = 'Informação de localização indisponível. Por favor, tente novamente.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
     case error.TIMEOUT:
       errorMessage = 'Tempo limite para obter localização esgotado. Por favor, tente novamente.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
     default:
       errorMessage = 'Erro desconhecido ao obter localização.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
   }
 
@@ -2495,6 +2500,9 @@ function tratarErroLocalizacao(error) {
       </div>`;
     }
 
+    // Botões de ação
+    htmlContent += `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">`;
+
     if (showRetryButton) {
       htmlContent += `
       <button onclick="solicitarPermissaoLocalizacao()" style="
@@ -2508,18 +2516,50 @@ function tratarErroLocalizacao(error) {
         font-weight: 500;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        margin-top: 8px;
       ">
         <i class="fas fa-location-arrow"></i> Tentar Novamente
       </button>`;
     }
 
-    htmlContent += '</div>';
+    if (showManualAddressButton) {
+      htmlContent += `
+      <button onclick="abrirModalEnderecoManual()" style="
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      ">
+        <i class="fas fa-keyboard"></i> Digitar Endereço Manualmente
+      </button>`;
+    }
+
+    htmlContent += `</div></div>`;
 
     elements.deliveryError.innerHTML = htmlContent;
     elements.deliveryError.style.display = 'block';
     if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
+  }
+}
+
+// Função para abrir modal de endereço manual
+function abrirModalEnderecoManual() {
+  if (typeof window.ManualAddress !== 'undefined' && typeof window.ManualAddress.open === 'function') {
+    window.ManualAddress.open();
+  } else if (typeof window.Mapa !== 'undefined' && typeof window.Mapa.openManualAddressModal === 'function') {
+    window.Mapa.openManualAddressModal();
+  } else {
+    console.error('Função de endereço manual não encontrada');
+    alert('Erro ao abrir formulário de endereço. Por favor, recarregue a página.');
   }
 }
 

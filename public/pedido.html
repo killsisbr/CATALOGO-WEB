@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
   <div class="mobile-container">
     <!-- Barra de informações de horário -->
@@ -129,7 +131,7 @@
             <i class="fab fa-whatsapp whatsapp-icon"></i>
             <p>Pedido iniciado via WhatsApp</p>
           </div>
-          
+
           <div class="order-summary">
             <h3>Resumo do Pedido</h3>
             <ul id="order-items-summary">
@@ -139,7 +141,7 @@
               <span>Total:</span>
               <span id="order-total">R$ 0,00</span>
             </div>
-            
+
             <!-- Formulário de cliente -->
             <div class="client-form">
               <h3>Seus Dados</h3>
@@ -152,19 +154,20 @@
                 <label for="client-address-preview">Endereço: *</label>
                 <div id="client-address-preview" class="client-address-preview">Nenhum endereço selecionado</div>
                 <input type="hidden" id="client-address" name="client-address" value="">
-                  <button type="button" id="calcular-taxa-btn" class="calcular-taxa-btn" style="margin-top: 10px; display:none;" disabled aria-disabled="true">
-                    <i class="fas fa-calculator"></i> Calcular Taxa de Entrega
-                  </button>
+                <button type="button" id="calcular-taxa-btn" class="calcular-taxa-btn"
+                  style="margin-top: 10px; display:none;" disabled aria-disabled="true">
+                  <i class="fas fa-calculator"></i> Calcular Taxa de Entrega
+                </button>
                 <!-- previous-address removed per request -->
               </div>
-              
+
               <!-- Seção de Entrega -->
               <div id="delivery-section" class="delivery-section">
                 <h3>Entrega</h3>
-                  <button type="button" id="use-location-btn" class="use-location-btn">
-                    <i class="fas fa-map-marker-alt"></i> Calcular frete
-                  </button>
-                
+                <button type="button" id="use-location-btn" class="use-location-btn">
+                  <i class="fas fa-map-marker-alt"></i> Calcular frete
+                </button>
+
                 <!-- Informações da entrega -->
                 <div id="delivery-info" class="delivery-info" style="display: none;">
                   <p>Distância: <span id="delivery-distance">0</span> km</p>
@@ -173,15 +176,15 @@
                     <strong>Observações do local:</strong> <span id="delivery-note-main"></span>
                   </div>
                 </div>
-                
+
                 <!-- Erros da entrega -->
                 <div id="delivery-error" class="delivery-error" style="display: none; color: #e74c3c;">
                 </div>
-                
+
                 <!-- Campo oculto para coordenadas -->
                 <input type="hidden" id="client-coordinates" name="client-coordinates">
               </div>
-              
+
               <!-- Opção de Retirada no Balcão (FORA do delivery-section para não ser escondido) -->
               <div id="pickup-section" class="pickup-section">
                 <div class="pickup-toggle">
@@ -197,7 +200,7 @@
                   <i class="fas fa-info-circle"></i> Você optou por retirar no balcão. Sem taxa de entrega!
                 </p>
               </div>
-              
+
               <!-- Modal do Mapa -->
               <div id="map-modal" class="modal">
                 <div class="modal-content map-modal-content">
@@ -232,12 +235,15 @@
                       <p><strong>Distância:</strong> <span id="modal-distance">0</span> km</p>
                       <p><strong>Valor da entrega:</strong> R$ <span id="modal-delivery-price">0,00</span></p>
                     </div>
-                    <div id="delivery-note-preview" style="display:none; margin-top:10px;" class="delivery-info-preview">
+                    <div id="delivery-note-preview" style="display:none; margin-top:10px;"
+                      class="delivery-info-preview">
                       <p><strong>Observações do local:</strong> <span id="delivery-note-text"></span></p>
                     </div>
                     <div class="form-group">
-                      <label for="address-notes">Observações do local (cor da casa, ponto de referência, vizinho da frente):</label>
-                      <textarea id="address-notes" rows="2" placeholder="Ex: Casa azul com portão verde, número 15 - vizinho da frente é o nº 17"></textarea>
+                      <label for="address-notes">Observações do local (cor da casa, ponto de referência, vizinho da
+                        frente):</label>
+                      <textarea id="address-notes" rows="2"
+                        placeholder="Ex: Casa azul com portão verde, número 15 - vizinho da frente é o nº 17"></textarea>
                     </div>
                     <div class="map-controls">
                       <button id="confirm-address-btn" class="confirm-button">Confirmar Endereço</button>
@@ -246,7 +252,84 @@
                   </div>
                 </div>
               </div>
-              
+
+              <!-- Modal de Endereço Manual (quando geolocalização negada) -->
+              <div id="manual-address-modal" class="modal">
+                <div class="modal-content" style="max-width: 480px;">
+                  <div class="modal-header"
+                    style="background: linear-gradient(135deg, #27ae60, #2ecc71); padding: 20px; border-radius: 12px 12px 0 0;">
+                    <h2 style="color: white; margin: 0; display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-map-marker-alt"></i> Informe seu Endereço
+                    </h2>
+                    <button class="close-manual-address-modal"
+                      style="color: white; background: rgba(0,0,0,0.2); border: none; font-size: 1.5rem; cursor: pointer; padding: 5px 10px; border-radius: 50%;">&times;</button>
+                  </div>
+                  <div class="modal-body" style="padding: 25px;">
+                    <div
+                      style="background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                      <p
+                        style="color: #e74c3c; margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Não foi possível obter sua localização automaticamente. Por favor, digite seu endereço
+                        manualmente.
+                      </p>
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                      <label for="manual-street"
+                        style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color, #fff);">
+                        <i class="fas fa-road" style="color: #27ae60; margin-right: 6px;"></i> Rua/Avenida: <span
+                          style="color: #e74c3c;">*</span>
+                      </label>
+                      <input type="text" id="manual-street" placeholder="Ex: Rua Professor Souza Araujo" required
+                        style="width: 100%; padding: 14px 16px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-color, #fff); font-size: 1rem; box-sizing: border-box; transition: border-color 0.3s;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px;">
+                      <div>
+                        <label for="manual-number"
+                          style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color, #fff);">
+                          <i class="fas fa-hashtag" style="color: #27ae60; margin-right: 6px;"></i> Número: <span
+                            style="color: #e74c3c;">*</span>
+                        </label>
+                        <input type="text" id="manual-number" placeholder="Ex: 1200" required
+                          style="width: 100%; padding: 14px 16px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-color, #fff); font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                      <div>
+                        <label for="manual-neighborhood"
+                          style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color, #fff);">
+                          <i class="fas fa-home" style="color: #27ae60; margin-right: 6px;"></i> Bairro:
+                        </label>
+                        <input type="text" id="manual-neighborhood" placeholder="Ex: Centro"
+                          style="width: 100%; padding: 14px 16px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-color, #fff); font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                      <label for="manual-notes"
+                        style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color, #fff);">
+                        <i class="fas fa-comment" style="color: #27ae60; margin-right: 6px;"></i> Observações do local:
+                      </label>
+                      <textarea id="manual-notes" rows="3"
+                        placeholder="Ex: Casa azul com portão verde, próximo ao mercado..."
+                        style="width: 100%; padding: 14px 16px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-color, #fff); font-size: 1rem; box-sizing: border-box; resize: vertical; min-height: 80px;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <button id="confirm-manual-address-btn" class="confirm-button"
+                        style="padding: 16px 24px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #27ae60, #2ecc71); border: none; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                        <i class="fas fa-check"></i> Calcular Entrega
+                      </button>
+                      <button id="cancel-manual-address-btn"
+                        style="padding: 16px 24px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: var(--text-color, #fff); cursor: pointer; transition: background 0.2s;">
+                        <i class="fas fa-times"></i> Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="payment-method">Forma de Pagamento:</label>
@@ -257,7 +340,7 @@
                   </select>
                 </div>
               </div>
-              
+
               <!-- Campo para valor pago em dinheiro -->
               <div id="dinheiro-section" style="display: none;">
                 <label for="valor-pago">Valor da nota (R$):</label>
@@ -265,7 +348,7 @@
                 <small>Informe o valor da nota para calcular o troco</small>
               </div>
             </div>
-            
+
             <button id="confirm-order" class="confirm-button">Confirmar Pedido</button>
           </div>
         </div>
@@ -289,4 +372,5 @@
   <script src="pedido-script-debug.js"></script>
   <script src="image-debug.js"></script>
 </body>
+
 </html>

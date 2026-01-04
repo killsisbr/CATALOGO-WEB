@@ -94,19 +94,19 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(`❌ ${key}: NÃO ENCONTRADO`);
     }
   });
-  
+
   // Verificação específica para elementos de adicionais
   console.log('🧪 Verificação específica de adicionais:');
   console.log('  - additionalsSection:', elements.additionalsSection);
   console.log('  - additionalsList:', elements.additionalsList);
-  
+
   // Inicializar barra de pesquisa
   inicializarBarraPesquisa();
-  
+
   // Verificar se há parâmetro de WhatsApp na URL
   const urlParams = new URLSearchParams(window.location.search);
   whatsappId = urlParams.get('whatsapp');
-  
+
   if (whatsappId) {
     // Carregar informações do cliente do WhatsApp (função atual: carregarClienteInfo)
     carregarClienteInfo();
@@ -127,17 +127,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // ignore
     }
   }
-  
+
   // ============================================================
   // CARREGAR DADOS DO CACHE LOCAL (independente do whatsappId)
   // ============================================================
   carregarDadosDoCache();
-  
+
   // Carregar produtos
   // carregar categorias do servidor (gera os botões dinamicamente) — carregar antes dos produtos
   carregarCategoriasUI().catch(err => console.error('Erro ao carregar categorias:', err));
   carregarProdutos();
-  
+
   // Manual calcular taxa button disabled; force users to use location-based calculation
   if (elements.calcularTaxaBtn) {
     elements.calcularTaxaBtn.style.display = 'none';
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.clientAddress) {
     elements.clientAddress.setAttribute('readonly', 'readonly');
   }
-  
+
   // Inicializar Retirada no Balcão
   inicializarRetiradaBalcao();
 });
@@ -164,7 +164,7 @@ function inicializarRetiradaBalcao() {
   const useLocationBtn = document.getElementById('use-location-btn');
   const clientAddressPreview = document.getElementById('client-address-preview');
   const pickupSection = document.getElementById('pickup-section');
-  
+
   // Verificar se a seção de pickup deve ser exibida
   // Usar window.pickupEnabled definido por apply-custom-settings.js
   if (pickupSection) {
@@ -177,16 +177,16 @@ function inicializarRetiradaBalcao() {
       console.log('🏪 Seção de retirada no balcão: OCULTA');
     }
   }
-  
+
   if (!pickupCheckbox) {
     console.log('⚠️ Elemento pickup-checkbox não encontrado');
     return;
   }
-  
-  pickupCheckbox.addEventListener('change', function() {
+
+  pickupCheckbox.addEventListener('change', function () {
     isPickupMode = this.checked;
     console.log('🏪 Modo retirada no balcão:', isPickupMode);
-    
+
     if (isPickupMode) {
       // Ativar modo retirada
       if (pickupInfoText) pickupInfoText.style.display = 'flex';
@@ -196,7 +196,7 @@ function inicializarRetiradaBalcao() {
         clientAddressPreview.textContent = 'Retirada no Balcão';
         clientAddressPreview.style.color = 'var(--primary-color)';
       }
-      
+
       // Zerar taxa de entrega
       entregaInfo = {
         distancia: 0,
@@ -204,7 +204,7 @@ function inicializarRetiradaBalcao() {
         taxa: 0,
         isPickup: true
       };
-      
+
       // Atualizar totais
       atualizarCarrinho();
     } else {
@@ -215,15 +215,15 @@ function inicializarRetiradaBalcao() {
         clientAddressPreview.textContent = 'Nenhum endereço selecionado';
         clientAddressPreview.style.color = '';
       }
-      
+
       // Limpar info de entrega
       entregaInfo = null;
-      
+
       // Atualizar totais
       atualizarCarrinho();
     }
   });
-  
+
   console.log('✅ Retirada no balcão inicializada');
 }
 
@@ -237,22 +237,22 @@ function carregarDadosDoCache() {
     setTimeout(carregarDadosDoCache, 100);
     return;
   }
-  
+
   const cacheData = window.ClienteCache.carregar();
-  
+
   if (!cacheData) {
     console.log('ℹ️ Nenhum dado de cliente no cache local');
     return;
   }
-  
+
   console.log('📦 Dados encontrados no cache:', cacheData);
-  
+
   // Preencher nome se disponível
   if (cacheData.nome && elements.clientName) {
     elements.clientName.value = cacheData.nome;
     console.log('✅ Nome preenchido do cache:', cacheData.nome);
   }
-  
+
   // Se há endereço salvo, mostrar como endereço anterior
   if (cacheData.endereco && cacheData.coordinates) {
     mostrarEnderecoAnterior(cacheData);
@@ -265,7 +265,7 @@ function carregarDadosDoCache() {
 function mostrarEnderecoAnterior(cacheData) {
   // Criar/atualizar seção de endereço anterior
   let previousAddressSection = document.getElementById('previous-address-section');
-  
+
   if (!previousAddressSection) {
     // Criar seção de endereço anterior
     previousAddressSection = document.createElement('div');
@@ -279,25 +279,25 @@ function mostrarEnderecoAnterior(cacheData) {
       margin-bottom: 15px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     `;
-    
+
     // Inserir antes da seção de entrega
     const deliverySection = document.getElementById('delivery-section');
     if (deliverySection && deliverySection.parentNode) {
       deliverySection.parentNode.insertBefore(previousAddressSection, deliverySection);
     }
   }
-  
+
   // Esconder seção de entrega original quando há endereço anterior
   const deliverySection = document.getElementById('delivery-section');
   if (deliverySection) {
     deliverySection.style.display = 'none';
   }
-  
+
   // Formatar valor
   const precoFormatado = cacheData.price ? cacheData.price.toFixed(2).replace('.', ',') : '0,00';
   const distanciaFormatada = cacheData.distance ? cacheData.distance.toFixed(2) : '0';
   const observacao = cacheData.addressNote ? `<p style="font-size: 12px; color: #aaa; margin-top: 5px;"><strong>Obs:</strong> ${cacheData.addressNote}</p>` : '';
-  
+
   previousAddressSection.innerHTML = `
     <div style="display: flex; align-items: center; margin-bottom: 10px;">
       <i class="fas fa-history" style="color: #4CAF50; margin-right: 10px; font-size: 18px;"></i>
@@ -320,17 +320,17 @@ function mostrarEnderecoAnterior(cacheData) {
       </button>
     </div>
   `;
-  
+
   // Adicionar eventos aos botões
   const usePreviousBtn = document.getElementById('use-previous-address-btn');
   const newAddressBtn = document.getElementById('new-address-btn');
-  
+
   if (usePreviousBtn) {
     usePreviousBtn.addEventListener('click', () => {
       usarEnderecoAnterior(cacheData);
     });
   }
-  
+
   if (newAddressBtn) {
     newAddressBtn.addEventListener('click', () => {
       // Esconder seção de endereço anterior
@@ -353,25 +353,25 @@ function mostrarEnderecoAnterior(cacheData) {
 // ============================================================
 function usarEnderecoAnterior(cacheData) {
   console.log('🔄 Usando endereço anterior do cache:', cacheData);
-  
+
   // Preencher campo de endereço
   if (elements.clientAddress) {
     elements.clientAddress.value = cacheData.endereco;
   }
-  
+
   // Atualizar preview do endereço
   const clientAddressPreview = document.getElementById('client-address-preview');
   if (clientAddressPreview) {
     clientAddressPreview.textContent = cacheData.endereco;
     clientAddressPreview.classList.add('filled');
   }
-  
+
   // Salvar coordenadas
   const coordsInput = document.getElementById('client-coordinates');
   if (coordsInput && cacheData.coordinates) {
     coordsInput.value = JSON.stringify(cacheData.coordinates);
   }
-  
+
   // Atualizar objeto global de entrega (ambas as variáveis)
   const entregaData = {
     distance: cacheData.distance,
@@ -381,13 +381,13 @@ function usarEnderecoAnterior(cacheData) {
   };
   window.entregaInfo = entregaData;
   entregaInfo = entregaData; // Atualizar variável local também
-  
+
   // Mostrar informações de entrega
   const deliveryInfo = document.getElementById('delivery-info');
   const deliveryDistance = document.getElementById('delivery-distance');
   const deliveryPrice = document.getElementById('delivery-price');
   const deliveryError = document.getElementById('delivery-error');
-  
+
   if (deliveryInfo && deliveryDistance && deliveryPrice) {
     deliveryDistance.textContent = cacheData.distance.toFixed(2);
     deliveryPrice.textContent = cacheData.price.toFixed(2).replace('.', ',');
@@ -396,7 +396,7 @@ function usarEnderecoAnterior(cacheData) {
       deliveryError.style.display = 'none';
     }
   }
-  
+
   // Mostrar observações se houver
   const deliveryNoteMain = document.getElementById('delivery-note-main');
   const deliveryNoteContainer = document.getElementById('delivery-note');
@@ -404,7 +404,7 @@ function usarEnderecoAnterior(cacheData) {
     deliveryNoteMain.textContent = cacheData.addressNote;
     deliveryNoteContainer.style.display = 'block';
   }
-  
+
   // Esconder seção de endereço anterior após usar
   const previousAddressSection = document.getElementById('previous-address-section');
   if (previousAddressSection) {
@@ -420,7 +420,7 @@ function usarEnderecoAnterior(cacheData) {
       </div>
       <p style="color: #fff; margin: 8px 0 0 0; font-size: 12px;">${cacheData.endereco}</p>
     `;
-    
+
     // Adicionar evento para alterar endereço
     const changeBtn = document.getElementById('change-address-btn');
     if (changeBtn) {
@@ -433,17 +433,17 @@ function usarEnderecoAnterior(cacheData) {
       });
     }
   }
-  
+
   // Atualizar total do pedido
   atualizarResumoPedido();
-  
+
   console.log('✅ Endereço anterior aplicado com sucesso!');
 }
 
 // Atualizar estado dos botões do carrossel
 function atualizarEstadoBotoes() {
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   if (produtosDaCategoria.length <= 1) {
     // Se houver 0 ou 1 produto, desativar ambos os botões
     if (elements.prevProductBtn) elements.prevProductBtn.disabled = true;
@@ -453,7 +453,7 @@ function atualizarEstadoBotoes() {
     if (elements.prevProductBtn) elements.prevProductBtn.disabled = false;
     if (elements.nextProductBtn) elements.nextProductBtn.disabled = false;
   }
-  
+
   console.log('Estado dos botões atualizado');
 }
 
@@ -464,14 +464,14 @@ async function carregarProdutos() {
     const res = await fetch('/api/produtos');
     console.log('Response status:', res.status);
     console.log('Response headers:', [...res.headers.entries()]);
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     const rawData = await res.text();
     console.log('Raw data received:', rawData);
-    
+
     // Tentar parsear como JSON
     try {
       produtos = JSON.parse(rawData);
@@ -481,15 +481,15 @@ async function carregarProdutos() {
       console.error('Dados recebidos:', rawData);
       return;
     }
-    
+
     // Verificar se produtos foram carregados corretamente
     if (!produtos || produtos.length === 0) {
       console.error('Nenhum produto encontrado ou erro no carregamento');
       return;
     }
-    
+
     console.log('Total de produtos carregados:', produtos.length);
-    
+
     // Verificar as imagens dos produtos
     produtos.forEach((produto, index) => {
       console.log(`Produto ${index + 1}:`, {
@@ -500,10 +500,10 @@ async function carregarProdutos() {
         imagemType: typeof produto.imagem
       });
     });
-    
+
     // Organizar produtos por categoria
     organizarProdutosPorCategoria();
-    
+
     // Inicializar carrossel
     atualizarCarrossel();
   } catch (error) {
@@ -643,7 +643,7 @@ function atualizarCarrossel() {
   console.log('Categoria atual:', categoriaAtual);
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
   console.log('Produtos da categoria atual:', categoriaAtual, produtosDaCategoria);
-  
+
   // Verificar se há produtos na categoria
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhum produto disponível nesta categoria');
@@ -657,24 +657,24 @@ function atualizarCarrossel() {
     if (elements.carouselDots) {
       elements.carouselDots.innerHTML = '';
     }
-    
+
     // Desativar botões quando não há produtos
     if (elements.prevProductBtn) elements.prevProductBtn.disabled = true;
     if (elements.nextProductBtn) elements.nextProductBtn.disabled = true;
     return;
   }
-  
+
   console.log('Produtos encontrados na categoria, total:', produtosDaCategoria.length);
-  
+
   // Garantir que o índice esteja dentro dos limites
   if (indiceProdutoAtual >= produtosDaCategoria.length) {
     indiceProdutoAtual = 0;
   }
-  
+
   console.log('Índice do produto atual:', indiceProdutoAtual);
   renderizarProdutoAtual();
   renderizarIndicadoresCarrossel();
-  
+
   // Atualizar estado dos botões
   atualizarEstadoBotoes();
 }
@@ -682,30 +682,30 @@ function atualizarCarrossel() {
 // Renderizar produto atual no carrossel
 function renderizarProdutoAtual() {
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhum produto na categoria atual para renderizar');
     return;
   }
-  
+
   const produto = produtosDaCategoria[indiceProdutoAtual];
-  
+
   if (!elements.currentProduct) {
     console.error('Elemento currentProduct não encontrado');
     return;
   }
-  
+
   // Log para debug
   console.log('Renderizando produto:', produto);
   console.log('Imagem do produto:', produto.imagem);
-  
+
   // Verificar se a imagem é válida
   if (produto.imagem) {
     console.log('URL da imagem parece válida:', produto.imagem);
   } else {
     console.log('Produto sem imagem definida, usando placeholder');
   }
-  
+
   elements.currentProduct.innerHTML = `
     <div class="product-card">
       <div class="product-image-container">
@@ -724,25 +724,25 @@ function renderizarProdutoAtual() {
       </div>
     </div>
   `;
-  
+
   // Verificar se a imagem foi renderizada corretamente
   const imgElement = elements.currentProduct.querySelector('.product-image');
   if (imgElement) {
     console.log('Elemento de imagem criado:', imgElement);
     console.log('Src da imagem:', imgElement.src);
-    
+
     // Adicionar listeners para verificar o carregamento
-    imgElement.addEventListener('load', function() {
+    imgElement.addEventListener('load', function () {
       console.log('Imagem carregada com sucesso:', this.src);
     });
-    
-    imgElement.addEventListener('error', function(e) {
+
+    imgElement.addEventListener('error', function (e) {
       console.error('Erro ao carregar imagem:', this.src, e);
     });
   } else {
     console.error('Elemento de imagem não encontrado após renderização');
   }
-  
+
   // Atualizar indicadores ativos
   atualizarIndicadoresAtivos();
 }
@@ -752,23 +752,23 @@ function renderizarProdutoAtual() {
 function renderizarIndicadoresCarrossel() {
   console.log('Iniciando renderização dos indicadores do carrossel...');
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   console.log('Produtos da categoria para indicadores:', produtosDaCategoria);
-  
+
   if (!elements.carouselDots) {
     console.error('Elemento carouselDots não encontrado');
     return;
   }
-  
+
   elements.carouselDots.innerHTML = '';
-  
+
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhum indicador para renderizar - categoria vazia');
     return;
   }
-  
+
   console.log('Número de indicadores a serem criados:', produtosDaCategoria.length);
-  
+
   produtosDaCategoria.forEach((produto, index) => {
     const dot = document.createElement('div');
     dot.className = `dot ${index === indiceProdutoAtual ? 'active' : ''}`;
@@ -781,33 +781,33 @@ function renderizarIndicadoresCarrossel() {
     elements.carouselDots.appendChild(dot);
     console.log('Indicador criado para índice:', index, 'produto:', produto.nome);
   });
-  
+
   console.log('Indicadores renderizados:', elements.carouselDots.children.length);
 }
 
 // Mostrar modal de seleção de quantidade
 function mostrarModalQuantidade(produto) {
   console.log('🎯 mostrarModalQuantidade() chamada com produto:', produto);
-  
+
   elements.quantityProductImage.src = produto.imagem || getPlaceholderSVG(80, 80, 'Imagem');
   elements.quantityProductImage.alt = produto.nome;
   elements.quantityProductName.textContent = produto.nome;
   elements.quantityProductPrice.textContent = `R$ ${produto.preco.toFixed(2).replace('.', ',')}`;
-  
+
   quantidadeSelecionada = 1;
   elements.selectedQuantity.textContent = quantidadeSelecionada;
-  
+
   // Limpar observação e adicionais selecionados
   observacaoAtual = '';
   adicionaisSelecionados = [];
   elements.observationInput.value = '';
-  
+
   console.log('🔄 Limpando adicionais selecionados');
   console.log('📞 Chamando carregarAdicionais()...');
-  
+
   // Carregar adicionais
   carregarAdicionais();
-  
+
   console.log('✅ Modal de quantidade sendo exibido');
   mostrarModal(elements.quantityModal);
 }
@@ -817,13 +817,13 @@ function atualizarPrecoModalQuantidade() {
   if (produtoSelecionado) {
     // Calcular preço base
     let precoBase = produtoSelecionado.preco * quantidadeSelecionada;
-    
+
     // Adicionar preço dos adicionais selecionados
     const precoAdicionais = adicionaisSelecionados.reduce((acc, adicional) => acc + adicional.preco, 0) * quantidadeSelecionada;
-    
+
     // Calcular preço total
     const precoTotal = precoBase + precoAdicionais;
-    
+
     // Atualizar exibição do preço
     elements.quantityProductPrice.textContent = `R$ ${precoTotal.toFixed(2).replace('.', ',')}`;
   }
@@ -833,7 +833,7 @@ function atualizarPrecoModalQuantidade() {
 function carregarAdicionais() {
   console.log('🍔 carregarAdicionais() chamada');
   console.log('📦 produtoSelecionado:', produtoSelecionado);
-  
+
   // Determinar lista de adicionais de forma robusta
   const adicionaisList = getAdicionaisList();
   console.log('📋 adicionaisList:', adicionaisList);
@@ -842,7 +842,7 @@ function carregarAdicionais() {
   // Se o produto for bebida ou se o produto for da própria subcategoria adicionais, não mostrar
   const produtoIsBebida = (bebidasCategoriaName && produtoSelecionado && produtoSelecionado.categoria && produtoSelecionado.categoria.toLowerCase().trim() === bebidasCategoriaName.toLowerCase().trim()) || (produtoSelecionado && /bebida/i.test(produtoSelecionado.categoria || ''));
   const produtoIsAdicional = (adicionaisCategoriaName && produtoSelecionado && produtoSelecionado.categoria && produtoSelecionado.categoria.toLowerCase().trim() === adicionaisCategoriaName.toLowerCase().trim()) || (produtoSelecionado && /adicional/i.test(produtoSelecionado.categoria || ''));
-  
+
   console.log('🍺 produtoIsBebida:', produtoIsBebida);
   console.log('➕ produtoIsAdicional:', produtoIsAdicional);
 
@@ -902,7 +902,7 @@ function getAdicionaisList() {
   console.log('🔍 getAdicionaisList() chamada');
   console.log('📝 adicionaisCategoriaName:', adicionaisCategoriaName);
   console.log('🗂️ produtosPorCategoria:', produtosPorCategoria);
-  
+
   let list = [];
   if (adicionaisCategoriaName && produtosPorCategoria[adicionaisCategoriaName]) {
     list = produtosPorCategoria[adicionaisCategoriaName];
@@ -914,11 +914,11 @@ function getAdicionaisList() {
     // fallback: filtrar produtos que tenham indicador de adicional
     list = produtos.filter(p => {
       const cat = (p.categoria || '').toString();
-      return /adicional|extra|opcional|acrescentar/i.test(cat) || /adicional|extra|opcional|acrescentar/i.test((p.nome||''));
+      return /adicional|extra|opcional|acrescentar/i.test(cat) || /adicional|extra|opcional|acrescentar/i.test((p.nome || ''));
     });
     console.log('⚠️ Lista de adicionais encontrada por fallback (filtro):', list);
   }
-  
+
   console.log('📤 Retornando lista de adicionais:', list);
   return Array.isArray(list) ? list : [];
 }
@@ -929,7 +929,7 @@ function atualizarQuantidade(delta) {
   if (novaQuantidade >= 1 && novaQuantidade <= 99) {
     quantidadeSelecionada = novaQuantidade;
     elements.selectedQuantity.textContent = quantidadeSelecionada;
-    
+
     // Atualizar o preço exibido no modal
     atualizarPrecoModalQuantidade();
   }
@@ -938,16 +938,16 @@ function atualizarQuantidade(delta) {
 // Atualizar indicadores ativos
 function atualizarIndicadoresAtivos() {
   console.log('Iniciando atualização dos indicadores ativos...');
-  
+
   if (!elements.carouselDots) {
     console.error('Elemento carouselDots não encontrado');
     return;
   }
-  
+
   const dots = elements.carouselDots.querySelectorAll('.dot');
   console.log('Número de dots encontrados:', dots.length);
   console.log('Índice do produto atual:', indiceProdutoAtual);
-  
+
   dots.forEach((dot, index) => {
     if (index === indiceProdutoAtual) {
       dot.classList.add('active');
@@ -963,18 +963,18 @@ function atualizarIndicadoresAtivos() {
 function proximoProduto() {
   console.log('Navegando para o próximo produto');
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhuma categoria ativa ou categoria vazia');
     return;
   }
-  
+
   console.log('Índice atual:', indiceProdutoAtual);
   console.log('Total de produtos:', produtosDaCategoria.length);
-  
+
   indiceProdutoAtual = (indiceProdutoAtual + 1) % produtosDaCategoria.length;
   console.log('Novo índice:', indiceProdutoAtual);
-  
+
   renderizarProdutoAtual();
   atualizarEstadoBotoes();
 }
@@ -983,18 +983,18 @@ function proximoProduto() {
 function produtoAnterior() {
   console.log('Navegando para o produto anterior');
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhuma categoria ativa ou categoria vazia');
     return;
   }
-  
+
   console.log('Índice atual:', indiceProdutoAtual);
   console.log('Total de produtos:', produtosDaCategoria.length);
-  
+
   indiceProdutoAtual = (indiceProdutoAtual - 1 + produtosDaCategoria.length) % produtosDaCategoria.length;
   console.log('Novo índice:', indiceProdutoAtual);
-  
+
   renderizarProdutoAtual();
   atualizarEstadoBotoes();
 }
@@ -1018,11 +1018,11 @@ function mudarCategoria(novaCategoria) {
   // Atualizar categoria atual
   categoriaAtual = novaCategoria;
   console.log('Categoria atual definida como:', categoriaAtual);
-  
+
   // Resetar índice do produto
   indiceProdutoAtual = 0;
   console.log('Índice do produto resetado para:', indiceProdutoAtual);
-  
+
   // Atualizar carrossel
   atualizarCarrossel();
 }
@@ -1040,17 +1040,17 @@ function adicionarAoCarrinho(produto, quantidade, observacao, adicionais) {
   } else {
     adicionaisParaEsteItem = adicionaisSelecionados.length > 0 ? adicionaisSelecionados : (adicionais || []);
   }
-  
+
   carrinho.push({
     produto: produto,
     quantidade: quantidade,
     observacao: observacao,
     adicionais: adicionaisParaEsteItem
   });
-  
+
   // Limpar os adicionais selecionados
   adicionaisSelecionados = [];
-  
+
   atualizarCarrinho();
   mostrarNotificacao(`${quantidade}x ${produto.nome} adicionado(s) ao carrinho!`);
 }
@@ -1061,36 +1061,36 @@ function atualizarCarrinho() {
   const totalItens = carrinho.reduce((total, item) => total + item.quantidade, 0);
   elements.cartCount.textContent = totalItens;
   elements.cartCountModal.textContent = totalItens;
-  
+
   // Atualizar itens do carrinho no modal
   elements.cartItems.innerHTML = '';
-  
+
   carrinho.forEach((item, index) => {
     const li = document.createElement('li');
     li.className = 'cart-item';
-    
+
     // Construir HTML do item
     let itemHTML = `
       <div class="cart-item-info">
         <div class="cart-item-name">${item.quantidade}x ${item.produto.nome}</div>
     `;
-    
+
     // Adicionar adicionais se existirem
     if (item.adicionais && item.adicionais.length > 0) {
       const adicionaisText = item.adicionais.map(a => a.nome).join(', ');
       itemHTML += `<div class="cart-item-additionals">Adicionais: ${adicionaisText}</div>`;
     }
-    
+
     // Adicionar observação se existir
     if (item.observacao) {
       itemHTML += `<div class="cart-item-observation">${item.observacao}</div>`;
     }
-    
+
     // Calcular preço total do item (produto + adicionais)
     const precoProduto = item.produto.preco * item.quantidade;
     const precoAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
     const precoTotal = precoProduto + precoAdicionais;
-    
+
     itemHTML += `
         <div class="cart-item-price">R$ ${precoTotal.toFixed(2).replace('.', ',')}</div>
       </div>
@@ -1105,11 +1105,11 @@ function atualizarCarrinho() {
         </button>
       </div>
     `;
-    
+
     li.innerHTML = itemHTML;
     elements.cartItems.appendChild(li);
   });
-  
+
   // Adicionar eventos aos botões de quantidade
   document.querySelectorAll('.quantity-btn-cart.decrease').forEach(button => {
     button.addEventListener('click', (e) => {
@@ -1122,7 +1122,7 @@ function atualizarCarrinho() {
       atualizarCarrinho();
     });
   });
-  
+
   document.querySelectorAll('.quantity-btn-cart.increase').forEach(button => {
     button.addEventListener('click', (e) => {
       const index = parseInt(e.target.dataset.index);
@@ -1130,7 +1130,7 @@ function atualizarCarrinho() {
       atualizarCarrinho();
     });
   });
-  
+
   document.querySelectorAll('.remove-item').forEach(button => {
     button.addEventListener('click', (e) => {
       const index = parseInt(e.target.dataset.index);
@@ -1138,28 +1138,28 @@ function atualizarCarrinho() {
       atualizarCarrinho();
     });
   });
-  
+
   // Atualizar total
   const total = carrinho.reduce((sum, item) => {
     // Calcular preço do produto
     let precoProduto = item.produto.preco * item.quantidade;
-    
+
     // Adicionar preço dos adicionais
     const precoAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
-    
+
     return sum + precoProduto + precoAdicionais;
   }, 0);
-  
+
   // Atualizar total com valor da entrega, se disponível
   let totalComEntrega = total;
   const entregaAtual = entregaInfo || (typeof window !== 'undefined' ? window.entregaInfo : null);
   if (entregaAtual && entregaAtual.price !== null && entregaAtual.price !== undefined) {
     totalComEntrega = total + entregaAtual.price;
   }
-  
+
   elements.cartTotal.textContent = `R$ ${totalComEntrega.toFixed(2).replace('.', ',')}`;
   elements.orderTotal.textContent = `R$ ${totalComEntrega.toFixed(2).replace('.', ',')}`;
-  
+
   // Atualizar resumo do pedido
   atualizarResumoPedido();
 }
@@ -1167,17 +1167,17 @@ function atualizarCarrinho() {
 // Atualizar resumo do pedido
 function atualizarResumoPedido() {
   elements.orderItemsSummary.innerHTML = '';
-  
+
   carrinho.forEach(item => {
     const li = document.createElement('li');
     li.className = 'order-item-summary';
-    
+
     // Construir HTML do item
     let itemHTML = `
       <div>
         <div>${item.quantidade}x ${item.produto.nome}</div>
     `;
-    
+
     // Adicionar adicionais se existirem
     if (item.adicionais && item.adicionais.length > 0) {
       const adicionaisText = item.adicionais.map(a => a.nome).join(', ');
@@ -1185,26 +1185,26 @@ function atualizarResumoPedido() {
       const valorAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
       itemHTML += `<div class="order-item-additionals">Adicionais: ${adicionaisText} (R$ ${valorAdicionais.toFixed(2).replace('.', ',')})</div>`;
     }
-    
+
     // Adicionar observação se existir
     if (item.observacao) {
       itemHTML += `<div class="order-item-observation">${item.observacao}</div>`;
     }
-    
+
     // Calcular preço total do item (produto + adicionais)
     const precoProduto = item.produto.preco * item.quantidade;
     const precoAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
     const precoTotal = precoProduto + precoAdicionais;
-    
+
     itemHTML += `
       </div>
       <span>R$ ${precoTotal.toFixed(2).replace('.', ',')}</span>
     `;
-    
+
     li.innerHTML = itemHTML;
     elements.orderItemsSummary.appendChild(li);
   });
-  
+
   // Adicionar item de entrega no resumo, se disponível (aceita price === 0)
   const entregaParaResumo = entregaInfo || (typeof window !== 'undefined' ? window.entregaInfo : null);
   if (entregaParaResumo && entregaParaResumo.price !== null && entregaParaResumo.price !== undefined) {
@@ -1240,7 +1240,7 @@ function mostrarNotificacao(mensagem) {
     z-index: 1001;
     animation: fadeInOut 3s ease;
   `;
-  
+
   // Adicionar animação
   const style = document.createElement('style');
   style.textContent = `
@@ -1252,9 +1252,9 @@ function mostrarNotificacao(mensagem) {
     }
   `;
   document.head.appendChild(style);
-  
+
   document.body.appendChild(notification);
-  
+
   // Remover notificação após 3 segundos
   setTimeout(() => {
     notification.remove();
@@ -1278,32 +1278,32 @@ function fecharModal(modal) {
 function getPlaceholderSVG(width, height, text = '') {
   // Codificar o texto para uso em SVG
   const encodedText = encodeURIComponent(text);
-  
+
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Crect width='100%25' height='100%25' fill='%23ddd'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='${Math.min(width, height) / 8}' fill='%23666'%3E${encodedText}%3C/text%3E%3C/svg%3E`;
 }
 async function carregarClienteInfo() {
   if (!whatsappId) return;
-  
+
   try {
     const res = await fetch(`/api/clientes/${encodeURIComponent(whatsappId)}`);
     const data = await res.json();
-    
+
     if (data.success && data.cliente) {
       clienteInfo = data.cliente;
-      
+
       // Preencher campos do formulário com dados salvos
       elements.clientName.value = clienteInfo.nome || '';
       elements.clientAddress.value = clienteInfo.endereco || '';
       const clientAddressPreviewEl = document.getElementById('client-address-preview');
       if (clientAddressPreviewEl) clientAddressPreviewEl.textContent = clienteInfo.endereco || '';
-      
+
       // Preencher automaticamente as informações salvas
       if (clienteInfo.nome) {
         elements.clientName.value = clienteInfo.nome;
       }
-      
+
       // Telefone não é necessário preencher novamente pois veio pelo WhatsApp
-      
+
       // Prefill address if available
       if (clienteInfo.endereco) {
         elements.clientAddress.value = clienteInfo.endereco;
@@ -1319,13 +1319,13 @@ async function carregarClienteInfo() {
 // Salvar informações do cliente
 async function salvarClienteInfo() {
   if (!whatsappId) return;
-  
+
   const clienteData = {
     whatsappId: whatsappId,
     nome: elements.clientName.value,
     endereco: elements.clientAddress.value
   };
-  
+
   try {
     const res = await fetch('/api/clientes', {
       method: 'POST',
@@ -1334,9 +1334,9 @@ async function salvarClienteInfo() {
       },
       body: JSON.stringify(clienteData)
     });
-    
+
     const data = await res.json();
-    
+
     if (data.success) {
       console.log('Informações do cliente salvas com sucesso');
     }
@@ -1378,19 +1378,19 @@ elements.paymentMethod.addEventListener('change', () => {
 
 elements.confirmOrderBtn.addEventListener('click', async () => {
   if (carrinho.length === 0) return;
-  
+
   // Validar campos obrigatórios (telefone não é obrigatório pois já veio pelo WhatsApp)
   // Se for retirada no balcão, não precisa de endereço
   if (!elements.clientName.value) {
     mostrarNotificacao('Por favor, preencha seu nome!');
     return;
   }
-  
+
   if (!isPickupMode && !elements.clientAddress.value) {
     mostrarNotificacao('Por favor, preencha seu endereço ou selecione Retirada no Balcão!');
     return;
   }
-  
+
   // Verificar se o valor da entrega foi calculado (não necessário se for retirada)
   // Se a entregaInfo.price for 0 (taxa mínima ou retirada), ainda é considerado válido
   if (!isPickupMode && (!entregaInfo || entregaInfo.price === null || entregaInfo.price === undefined)) {
@@ -1402,33 +1402,33 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
       return;
     }
   }
-  
+
   // Se já tem endereço salvo e não digitou um novo, usar o salvo
   if (clienteInfo && clienteInfo.endereco && !elements.clientAddress.value) {
     elements.clientAddress.value = clienteInfo.endereco;
     const clientAddressPreviewEl3 = document.getElementById('client-address-preview');
     if (clientAddressPreviewEl3) clientAddressPreviewEl3.textContent = clienteInfo.endereco;
   }
-  
+
   // 'usePreviousAddress' checkbox removed - we no longer rely on it to set address; address will be prefilled automatically if empty
-  
+
   // Validar valor pago se for dinheiro e a seção estiver visível
   if (elements.paymentMethod.value === 'dinheiro' && elements.dinheiroSection.style.display === 'block') {
     const valorPago = parseFloat(elements.valorPago.value);
     const totalPedido = calcularTotalPedido();
-    
+
     // Verificar se o valor é 0 ou 0,00 (cliente quer troco)
     if (isNaN(valorPago) || valorPago < 0) {
       mostrarNotificacao('Por favor, informe o valor pago em dinheiro!');
       return;
     }
-    
+
     if (valorPago > 0 && valorPago < totalPedido) {
       mostrarNotificacao('O valor pago deve ser maior ou igual ao total do pedido!');
       return;
     }
   }
-  
+
   // Preparar dados do cliente para salvar no banco
   const clienteData = {
     nome: elements.clientName.value,
@@ -1438,10 +1438,10 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
     troco: elements.paymentMethod.value === 'dinheiro' ? parseFloat(elements.valorPago.value) : null,
     isPickup: isPickupMode
   };
-  
+
   // Salvar/atualizar informações do cliente no banco
   await salvarClienteInfo();
-  
+
   // Preparar dados do pedido
   const pedidoData = {
     cliente: clienteData,
@@ -1449,7 +1449,7 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
     total: calcularTotalPedido(),
     entrega: entregaInfo
   };
-  
+
   try {
     const res = await fetch('/api/pedidos', {
       method: 'POST',
@@ -1458,9 +1458,9 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
       },
       body: JSON.stringify(pedidoData)
     });
-    
+
     const data = await res.json();
-    
+
     if (data.success) {
       // ============================================================
       // ATUALIZAR CACHE LOCAL COM DADOS DO PEDIDO CONFIRMADO
@@ -1472,8 +1472,8 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
           if (coordsInput && coordsInput.value) {
             coords = JSON.parse(coordsInput.value);
           }
-        } catch (e) {}
-        
+        } catch (e) { }
+
         window.ClienteCache.salvar({
           nome: elements.clientName.value,
           endereco: elements.clientAddress.value,
@@ -1484,15 +1484,15 @@ elements.confirmOrderBtn.addEventListener('click', async () => {
         });
         console.log('✅ Cache atualizado após confirmação do pedido');
       }
-      
+
       // Fechar modal de checkout e mostrar confirmação
       fecharModal(elements.checkoutModal);
       mostrarModal(elements.confirmationModal);
-      
+
       // Limpar carrinho
       carrinho = [];
       atualizarCarrinho();
-      
+
       // Limpar informações de entrega
       entregaInfo = null;
       if (elements.deliveryInfo) {
@@ -1520,12 +1520,12 @@ function calcularTotalPedido() {
     const precoAdicionais = item.adicionais.reduce((acc, adicional) => acc + adicional.preco, 0) * item.quantidade;
     return sum + precoProduto + precoAdicionais;
   }, 0);
-  
+
   // Adicionar valor da entrega, se disponível (aceita price === 0)
   if (entregaInfo && entregaInfo.price !== null && entregaInfo.price !== undefined) {
     return totalItens + entregaInfo.price;
   }
-  
+
   return totalItens;
 }
 
@@ -1594,20 +1594,20 @@ function inicializarBarraPesquisa() {
   if (elements.searchInput) {
     elements.searchInput.addEventListener('input', debounce(pesquisarProdutos, 300));
   }
-  
+
   // Adicionar evento de clique no botão de pesquisa
   if (elements.searchButton) {
     elements.searchButton.addEventListener('click', () => {
       pesquisarProdutos();
     });
   }
-  
+
   // Adicionar evento de clique fora da barra de pesquisa para fechar os resultados
   document.addEventListener('click', (event) => {
     if (elements.searchInput && elements.searchButton && elements.searchResults &&
-        !elements.searchInput.contains(event.target) && 
-        !elements.searchButton.contains(event.target) && 
-        !elements.searchResults.contains(event.target)) {
+      !elements.searchInput.contains(event.target) &&
+      !elements.searchButton.contains(event.target) &&
+      !elements.searchResults.contains(event.target)) {
       elements.searchResults.style.display = 'none';
     }
   });
@@ -1619,28 +1619,28 @@ function pesquisarProdutos() {
   if (!elements.searchInput || !elements.searchResults) {
     return;
   }
-  
+
   const termo = elements.searchInput.value.toLowerCase().trim();
-  
+
   // Se o termo estiver vazio, esconder os resultados
   if (termo === '') {
     elements.searchResults.style.display = 'none';
     return;
   }
-  
+
   // Posicionar o dropdown corretamente (position: fixed)
   const inputRect = elements.searchInput.getBoundingClientRect();
   const dropdownWidth = Math.max(280, inputRect.width); // Mínimo 280px
   elements.searchResults.style.top = (inputRect.bottom + 4) + 'px';
   elements.searchResults.style.left = Math.max(8, inputRect.left) + 'px'; // Mínimo 8px da borda
   elements.searchResults.style.width = dropdownWidth + 'px';
-  
+
   // Filtrar produtos que correspondem ao termo de pesquisa
-  const resultados = produtos.filter(produto => 
-    produto.nome.toLowerCase().includes(termo) || 
+  const resultados = produtos.filter(produto =>
+    produto.nome.toLowerCase().includes(termo) ||
     (produto.descricao && produto.descricao.toLowerCase().includes(termo))
   );
-  
+
   // Renderizar resultados
   renderizarResultadosPesquisa(resultados);
 }
@@ -1652,16 +1652,16 @@ function renderizarResultadosPesquisa(resultados) {
     console.error('❌ Elemento searchResults não encontrado');
     return;
   }
-  
+
   // Limitar a 10 resultados
   const resultadosLimitados = resultados.slice(0, 10);
-  
+
   if (resultadosLimitados.length === 0) {
     elements.searchResults.innerHTML = '<div class="search-result-item no-results">Nenhum produto encontrado</div>';
     elements.searchResults.style.display = 'block';
     return;
   }
-  
+
   elements.searchResults.innerHTML = resultadosLimitados.map(produto => {
     const imagemSrc = produto.imagem || '/uploads/placeholder.png';
     return `
@@ -1676,21 +1676,21 @@ function renderizarResultadosPesquisa(resultados) {
     </div>
   `;
   }).join('');
-  
+
   elements.searchResults.style.display = 'block';
   console.log('✅ Resultados de pesquisa renderizados:', resultadosLimitados.length);
-  
+
   // Adicionar eventos de clique aos resultados
   document.querySelectorAll('.search-result-item').forEach(item => {
     item.addEventListener('click', () => {
       const produtoId = parseInt(item.dataset.id);
       const produto = produtos.find(p => p.id === produtoId);
-      
+
       if (produto) {
         // Fechar resultados da pesquisa
         elements.searchResults.style.display = 'none';
         elements.searchInput.value = '';
-        
+
         // Encontrar a categoria do produto (usar categorias dinâmicas quando disponíveis)
         let categoriaProduto = null;
         const prodCat = (produto.categoria || '').toString().trim();
@@ -1699,7 +1699,7 @@ function renderizarResultadosPesquisa(resultados) {
           if (matchEqual) categoriaProduto = matchEqual.nome;
           else {
             const matchContains = categorias.find(c => prodCat.toLowerCase().includes((c.nome || '').toLowerCase()));
-              if (matchContains && matchContains.nome !== adicionaisCategoriaName) categoriaProduto = matchContains.nome;
+            if (matchContains && matchContains.nome !== adicionaisCategoriaName) categoriaProduto = matchContains.nome;
           }
         }
 
@@ -1739,28 +1739,28 @@ function debounce(func, wait) {
 // Inicializar a aplicação
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM completamente carregado');
-  
+
   // Verificar se os elementos principais existem
   if (!elements.currentProduct) {
     console.error('Elemento currentProduct não encontrado');
     return;
   }
-  
+
   if (!elements.carouselDots) {
     console.error('Elemento carouselDots não encontrado');
     return;
   }
-  
+
   if (!elements.prevProductBtn || !elements.nextProductBtn) {
     console.error('Botões do carrossel não encontrados');
     return;
   }
-  
+
   console.log('Todos os elementos principais encontrados');
-  
+
   // Obter WhatsApp ID da sessionStorage ou da URL
   whatsappId = sessionStorage.getItem('whatsappId');
-  
+
   // Se não estiver na sessionStorage, tentar obter da URL
   if (whatsappId) {
     // Carregar informações do cliente do WhatsApp (função atual: carregarClienteInfo)
@@ -1769,30 +1769,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     if (whatsappId) {
       sessionStorage.setItem('whatsappId', whatsappId);
-      
+
       // Remover o parâmetro da URL sem recarregar a página
       const url = new URL(window.location);
       url.searchParams.delete('whatsapp');
       window.history.replaceState({}, document.title, url);
     }
   }
-  
+
   console.log('WhatsApp ID:', whatsappId);
-  
+
   // Garantir que categorias foram carregadas antes de organizar produtos
   await carregarCategoriasUI().catch(err => console.warn('Falha ao carregar categorias (inicial):', err));
   await carregarProdutos();
-  
+
   // Carregar informações do cliente se houver WhatsApp ID
   if (whatsappId) {
     await carregarClienteInfo();
   }
-  
+
   // Adicionar evento para o botão de usar localização
   if (elements.useLocationBtn) {
     elements.useLocationBtn.addEventListener('click', usarLocalizacao);
   }
-  
+
   // Delegação de eventos para o botão "Adicionar ao Carrinho"
   elements.currentProduct.addEventListener('click', (e) => {
     // Verificar se o clique foi no botão "Adicionar ao Carrinho"
@@ -1806,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
-  
+
   // Também adicionar delegação para eventos de toque
   elements.currentProduct.addEventListener('touchend', (e) => {
     // Verificar se o toque foi no botão "Adicionar ao Carrinho"
@@ -1814,26 +1814,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Prevenir o comportamento padrão para evitar conflitos
       e.preventDefault();
       e.stopPropagation();
-      
+
       // Tratar como clique direto
       const produtoId = parseInt(e.target.dataset.id);
       produtoSelecionado = produtos.find(p => p.id === produtoId);
       if (produtoSelecionado) {
         mostrarModalQuantidade(produtoSelecionado);
       }
-      
+
       return;
     }
   });
-  
+
   // Adicionar eventos swipe para o carrossel (swipe) - FUNCIONALIDADE TEMPORARIAMENTE DESABILITADA
   adicionarEventosSwipe();
-  
+
   // Adicionar navegação por botões como alternativa
   console.log('Adicionando event listeners aos botões do carrossel');
   console.log('Prev button:', elements.prevProductBtn);
   console.log('Next button:', elements.nextProductBtn);
-  
+
   if (elements.prevProductBtn && elements.nextProductBtn) {
     elements.prevProductBtn.addEventListener('click', produtoAnterior);
     elements.nextProductBtn.addEventListener('click', proximoProduto);
@@ -1841,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     console.error('Não foi possível adicionar event listeners aos botões do carrossel');
   }
-  
+
   console.log('Aplicação inicializada com sucesso');
 });
 
@@ -1849,13 +1849,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function adicionarEventosSwipe() {
   const carouselElement = elements.currentProduct;
   const bodyElement = document.body;
-  
+
   console.log('Adicionando eventos de swipe');
   console.log('Carousel element:', carouselElement);
   console.log('Body element:', bodyElement);
-  
+
   // Eventos para swipe para cima (abrir carrinho) - REMOVIDO
-  
+
   // Prevenir seleção de texto durante o swipe
   if (carouselElement) {
     carouselElement.addEventListener('selectstart', (e) => {
@@ -1953,12 +1953,12 @@ function usarLocalizacao() {
       elements.deliveryError.style.display = 'block';
       elements.deliveryInfo.style.display = 'none';
     }
-    
+
     navigator.geolocation.getCurrentPosition(
       position => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-        
+
         // Abrir mapa de pré-visualização com a localização obtida
         if (typeof window.Mapa !== 'undefined' && typeof window.Mapa.openMapModal === 'function') {
           window.Mapa.openMapModal(latitude, longitude);
@@ -1991,7 +1991,7 @@ function atualizarCarrossel() {
   console.log('Categoria atual:', categoriaAtual);
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
   console.log('Produtos da categoria atual:', categoriaAtual, produtosDaCategoria);
-  
+
   // Verificar se há produtos na categoria
   if (!produtosDaCategoria || produtosDaCategoria.length === 0) {
     console.log('Nenhum produto disponível nesta categoria');
@@ -2005,24 +2005,24 @@ function atualizarCarrossel() {
     if (elements.carouselDots) {
       elements.carouselDots.innerHTML = '';
     }
-    
+
     // Desativar botões quando não há produtos
     if (elements.prevProductBtn) elements.prevProductBtn.disabled = true;
     if (elements.nextProductBtn) elements.nextProductBtn.disabled = true;
     return;
   }
-  
+
   console.log('Produtos encontrados na categoria, total:', produtosDaCategoria.length);
-  
+
   // Garantir que o índice esteja dentro dos limites
   if (indiceProdutoAtual >= produtosDaCategoria.length) {
     indiceProdutoAtual = 0;
   }
-  
+
   console.log('Índice do produto atual:', indiceProdutoAtual);
   renderizarProdutoAtual();
   renderizarIndicadoresCarrossel();
-  
+
   // Atualizar estado dos botões
   atualizarEstadoBotoes();
 }
@@ -2034,25 +2034,25 @@ async function calcularEntrega(latitude, longitude) {
   console.log('Tipo da longitude:', typeof longitude);
   console.log('Latitude:', latitude);
   console.log('Longitude:', longitude);
-  
+
   if (typeof latitude !== 'number' || typeof longitude !== 'number') {
     console.error('Latitude e longitude devem ser números');
     return;
   }
-  
+
   // Mostrar mensagem de carregamento
   if (elements.deliveryError) {
     elements.deliveryError.textContent = 'Calculando taxa de entrega...';
     elements.deliveryError.style.display = 'block';
     elements.deliveryInfo.style.display = 'none';
   }
-  
+
   try {
     // Enviar requisição para calcular taxa de entrega
     console.log('Enviando requisição para calcular taxa de entrega');
     console.log('Latitude a ser enviada:', latitude);
     console.log('Longitude a ser enviada:', longitude);
-    
+
     const res = await fetch('/api/taxa-entrega', {
       method: 'POST',
       headers: {
@@ -2062,14 +2062,14 @@ async function calcularEntrega(latitude, longitude) {
     });
     console.log('Response status:', res.status);
     console.log('Response headers:', [...res.headers.entries()]);
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     const rawTaxa = await res.text();
     console.log('Taxa bruta recebida:', rawTaxa);
-    
+
     // Tentar parsear como número
     try {
       taxaEntrega = parseFloat(rawTaxa);
@@ -2079,15 +2079,15 @@ async function calcularEntrega(latitude, longitude) {
       console.error('Taxa recebida:', rawTaxa);
       return;
     }
-    
+
     // Verificar se taxa de entrega foi calculada corretamente
     if (isNaN(taxaEntrega) || taxaEntrega < 0) {
       console.error('Taxa de entrega inválida ou negativa');
       return;
     }
-    
+
     console.log('Taxa de entrega calculada:', taxaEntrega);
-    
+
     // Exibir taxa de entrega
     if (elements.deliveryInfo) {
       // Preencher campos separados (distância pode não estar disponível nesta rota)
@@ -2096,18 +2096,18 @@ async function calcularEntrega(latitude, longitude) {
       elements.deliveryInfo.style.display = 'block';
       elements.deliveryError.style.display = 'none';
     }
-    
+
     // Manual calculate button suppressed - keep hidden
     const calcularTaxaBtn = document.getElementById('calcular-taxa-btn');
     if (calcularTaxaBtn) {
       calcularTaxaBtn.style.display = 'none';
     }
-    
+
     // Atualizar totais com o valor da entrega
     atualizarCarrinho();
     // Garantir que o resumo do pedido também seja atualizado
     atualizarResumoPedido();
-    
+
     // Definir entregaInfo para que o checkout reconheça a taxa calculada
     entregaInfo = {
       distance: 0,
@@ -2120,14 +2120,14 @@ async function calcularEntrega(latitude, longitude) {
   } catch (error) {
     console.error('Erro ao calcular taxa de entrega:', error);
     console.error('Stack trace:', error.stack);
-    
+
     // Exibir erro
     if (elements.deliveryError) {
       elements.deliveryError.textContent = `Erro ao calcular taxa de entrega: ${error.message}`;
       elements.deliveryError.style.display = 'block';
       elements.deliveryInfo.style.display = 'none';
     }
-    
+
     // Esconder o botão de calcular taxa
     if (elements.calcularTaxaBtn) {
       elements.calcularTaxaBtn.style.display = 'none';
@@ -2139,7 +2139,7 @@ async function calcularEntrega(latitude, longitude) {
 function tratarErroLocalizacao(error) {
   console.error('Erro ao obter localização:', error);
   console.error('Stack trace:', error.stack);
-  
+
   if (elements.deliveryError) {
     elements.deliveryError.textContent = `Erro ao obter localização: ${error.message}`;
     elements.deliveryError.style.display = 'block';
@@ -2176,29 +2176,29 @@ function calcularTaxaLocalizacao() {
 // Nova função para converter endereço em coordenadas e calcular entrega
 async function converterEnderecoECalcularEntrega() {
   const endereco = elements.clientAddress.value.trim();
-  
+
   if (!endereco) {
     if (elements.deliveryError) {
       elements.deliveryError.textContent = 'Por favor, informe seu endereço para calcular o valor da entrega.';
       elements.deliveryError.style.display = 'block';
       if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
     }
-    
+
     // Esconder o botão de calcular taxa
     if (elements.calcularTaxaBtn) {
       elements.calcularTaxaBtn.style.display = 'none';
     }
-    
+
     return;
   }
-  
+
   // Mostrar mensagem de carregamento
   if (elements.deliveryError) {
     elements.deliveryError.textContent = 'Convertendo endereço e calculando entrega...';
     elements.deliveryError.style.display = 'block';
     if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
   }
-  
+
   try {
     // Converter endereço em coordenadas
     const response = await fetch('/api/entrega/calcular-taxa', {
@@ -2208,9 +2208,9 @@ async function converterEnderecoECalcularEntrega() {
       },
       body: JSON.stringify({ endereco })
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       // Verificar se o endereço está fora de Imbituva
       if (data.isOutsideImbituva) {
@@ -2236,7 +2236,7 @@ async function converterEnderecoECalcularEntrega() {
           elements.deliveryError.style.display = 'none';
         }
       }
-      
+
       // Atualizar informações de entrega
       entregaInfo = {
         distance: data.distance,
@@ -2244,17 +2244,17 @@ async function converterEnderecoECalcularEntrega() {
         coordinates: data.coordinates,
         enderecoDigitado: data.enderecoDigitado || false // Flag para não gerar link no WhatsApp
       };
-      
+
       // Salvar coordenadas no elemento hidden
       if (elements.clientCoordinates) {
         elements.clientCoordinates.value = JSON.stringify(data.coordinates);
       }
-      
+
       // Atualizar totais com o valor da entrega
       atualizarCarrinho();
       // Garantir que o resumo do pedido também seja atualizado
       atualizarResumoPedido();
-      
+
       // Atualizar informações de entrega no objeto global
       window.entregaInfo = {
         distance: data.distance,
@@ -2262,7 +2262,7 @@ async function converterEnderecoECalcularEntrega() {
         coordinates: data.coordinates,
         enderecoDigitado: data.enderecoDigitado || false // Flag para não gerar link no WhatsApp
       };
-      
+
       // Esconder o botão de calcular taxa
       if (elements.calcularTaxaBtn) {
         elements.calcularTaxaBtn.style.display = 'none';
@@ -2273,7 +2273,7 @@ async function converterEnderecoECalcularEntrega() {
         elements.deliveryError.style.display = 'block';
         if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
       }
-      
+
       // Manual calculate button suppressed - ensure it stays hidden on error
       if (elements.calcularTaxaBtn) {
         elements.calcularTaxaBtn.style.display = 'none';
@@ -2286,7 +2286,7 @@ async function converterEnderecoECalcularEntrega() {
       elements.deliveryError.style.display = 'block';
       if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
     }
-    
+
     // Manual calculate button suppressed - ensure it stays hidden on error
     if (elements.calcularTaxaBtn) {
       elements.calcularTaxaBtn.style.display = 'none';
@@ -2301,25 +2301,25 @@ async function calcularEntrega(latitude, longitude) {
   console.log('Tipo da longitude:', typeof longitude);
   console.log('Latitude:', latitude);
   console.log('Longitude:', longitude);
-  
+
   if (typeof latitude !== 'number' || typeof longitude !== 'number') {
     console.error('Latitude e longitude devem ser números');
     return;
   }
-  
+
   // Mostrar mensagem de carregamento
   if (elements.deliveryError) {
     elements.deliveryError.textContent = 'Calculando taxa de entrega...';
     elements.deliveryError.style.display = 'block';
     elements.deliveryInfo.style.display = 'none';
   }
-  
+
   try {
     // Enviar requisição para calcular entrega
     console.log('Enviando requisição para calcular entrega');
     console.log('Latitude a ser enviada:', latitude);
     console.log('Longitude a ser enviada:', longitude);
-    
+
     const res = await fetch('/api/entrega/calcular', {
       method: 'POST',
       headers: {
@@ -2329,10 +2329,10 @@ async function calcularEntrega(latitude, longitude) {
     });
     console.log('Response status:', res.status);
     console.log('Response headers:', [...res.headers.entries()]);
-    
+
     const data = await res.json();
     console.log('Dados recebidos:', data);
-    
+
     if (data.success) {
       if (data.error) {
         // Fora da área de entrega
@@ -2341,7 +2341,7 @@ async function calcularEntrega(latitude, longitude) {
           elements.deliveryError.style.display = 'block';
           elements.deliveryInfo.style.display = 'none';
         }
-        
+
         // Atualizar informações de entrega no objeto global mesmo quando há erro
         // Isso é importante para que o sistema reconheça que a entrega foi calculada
         window.entregaInfo = {
@@ -2356,7 +2356,7 @@ async function calcularEntrega(latitude, longitude) {
           price: data.price,
           coordinates: { lat: latitude, lng: longitude }
         };
-        
+
         // Exibir informações da entrega
         if (elements.deliveryInfo) {
           elements.deliveryDistance.textContent = data.distance.toFixed(2);
@@ -2364,24 +2364,24 @@ async function calcularEntrega(latitude, longitude) {
           elements.deliveryInfo.style.display = 'block';
           elements.deliveryError.style.display = 'none';
         }
-        
+
         // Salvar coordenadas no elemento hidden
         if (elements.clientCoordinates) {
           elements.clientCoordinates.value = JSON.stringify({ lat: latitude, lng: longitude });
         }
-        
+
         // Atualizar totais com o valor da entrega
         atualizarCarrinho();
         // Garantir que o resumo do pedido também seja atualizado
         atualizarResumoPedido();
-        
+
         // Atualizar informações de entrega no objeto global
         window.entregaInfo = {
           distance: data.distance,
           price: data.price,
           coordinates: { lat: latitude, lng: longitude }
         };
-        
+
         // Esconder o botão de calcular taxa
         if (elements.calcularTaxaBtn) {
           elements.calcularTaxaBtn.style.display = 'none';
@@ -2398,7 +2398,7 @@ async function calcularEntrega(latitude, longitude) {
   } catch (error) {
     console.error('Erro ao calcular entrega:', error);
     console.error('Stack trace:', error.stack);
-    
+
     // Exibir erro
     if (elements.deliveryError) {
       elements.deliveryError.textContent = 'Erro ao calcular valor da entrega. Por favor, tente novamente.';
@@ -2413,31 +2413,36 @@ function tratarErroLocalizacao(error) {
   let errorMessage = '';
   let showRetryButton = false;
   let showInstructions = false;
-  
+  let showManualAddressButton = false;
+
   switch (error.code) {
     case error.PERMISSION_DENIED:
       errorMessage = 'Permissão para acessar localização negada.';
       showRetryButton = true;
       showInstructions = true;
+      showManualAddressButton = true;
       break;
     case error.POSITION_UNAVAILABLE:
       errorMessage = 'Informação de localização indisponível. Por favor, tente novamente.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
     case error.TIMEOUT:
       errorMessage = 'Tempo limite para obter localização esgotado. Por favor, tente novamente.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
     default:
       errorMessage = 'Erro desconhecido ao obter localização.';
       showRetryButton = true;
+      showManualAddressButton = true;
       break;
   }
-  
+
   if (elements.deliveryError) {
     let htmlContent = `<div style="text-align: center;">
       <p style="margin-bottom: 12px;">${errorMessage}</p>`;
-    
+
     if (showInstructions) {
       htmlContent += `
       <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; text-align: left; font-size: 0.9rem;">
@@ -2446,7 +2451,10 @@ function tratarErroLocalizacao(error) {
         <p>💻 <strong>Computador:</strong> Clique no cadeado na barra de endereço → Permissões do site → Localização → Permitir.</p>
       </div>`;
     }
-    
+
+    // Botões de ação
+    htmlContent += `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">`;
+
     if (showRetryButton) {
       htmlContent += `
       <button onclick="solicitarPermissaoLocalizacao()" style="
@@ -2460,18 +2468,50 @@ function tratarErroLocalizacao(error) {
         font-weight: 500;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        margin-top: 8px;
       ">
         <i class="fas fa-location-arrow"></i> Tentar Novamente
       </button>`;
     }
-    
-    htmlContent += '</div>';
-    
+
+    if (showManualAddressButton) {
+      htmlContent += `
+      <button onclick="abrirModalEnderecoManual()" style="
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      ">
+        <i class="fas fa-keyboard"></i> Digitar Endereço Manualmente
+      </button>`;
+    }
+
+    htmlContent += `</div></div>`;
+
     elements.deliveryError.innerHTML = htmlContent;
     elements.deliveryError.style.display = 'block';
     if (elements.deliveryInfo) elements.deliveryInfo.style.display = 'none';
+  }
+}
+
+// Função para abrir modal de endereço manual
+function abrirModalEnderecoManual() {
+  if (typeof window.ManualAddress !== 'undefined' && typeof window.ManualAddress.open === 'function') {
+    window.ManualAddress.open();
+  } else if (typeof window.Mapa !== 'undefined' && typeof window.Mapa.openManualAddressModal === 'function') {
+    window.Mapa.openManualAddressModal();
+  } else {
+    console.error('Função de endereço manual não encontrada');
+    alert('Erro ao abrir formulário de endereço. Por favor, recarregue a página.');
   }
 }
 
@@ -2481,7 +2521,7 @@ async function solicitarPermissaoLocalizacao() {
   if (navigator.permissions && navigator.permissions.query) {
     try {
       const result = await navigator.permissions.query({ name: 'geolocation' });
-      
+
       if (result.state === 'denied') {
         // Permissão foi bloqueada permanentemente - mostrar instruções
         if (elements.deliveryError) {
@@ -2522,7 +2562,7 @@ async function solicitarPermissaoLocalizacao() {
       console.log('Permissions API não disponível, tentando diretamente');
     }
   }
-  
+
   // Tentar obter localização novamente
   usarLocalizacao();
 }
@@ -2531,15 +2571,15 @@ async function solicitarPermissaoLocalizacao() {
 function atualizarEstadoBotoes() {
   console.log('Iniciando atualização do estado dos botões do carrossel...');
   const produtosDaCategoria = produtosPorCategoria[categoriaAtual];
-  
+
   console.log('Produtos da categoria atual:', produtosDaCategoria);
   console.log('Número de produtos:', produtosDaCategoria ? produtosDaCategoria.length : 'undefined');
-  
+
   if (!elements.prevProductBtn || !elements.nextProductBtn) {
     console.error('Botões do carrossel não encontrados');
     return;
   }
-  
+
   if (!produtosDaCategoria || produtosDaCategoria.length <= 1) {
     // Se houver 0 ou 1 produto, desativar ambos os botões
     console.log('Desativando botões - 0 ou 1 produto');
